@@ -1,34 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CabWizz Fare Estimator</title>
-
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#16a34a">
-
+<meta name="theme-color" content="#0a7">
+<title>CabWizz Fare Estimator</title>
 <style>
-  *,*::before,*::after{box-sizing:border-box}
-  body{margin:16px;background:#f6f7f9;line-height:1.25;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
-  h1{font-size:20px;margin:0 0 10px;text-align:left}
-  .card{background:#fff;border:1px solid #ddd;border-radius:14px;padding:14px;margin:12px auto;max-width:720px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-  label{display:block;font-size:14px;margin:8px 0 4px}
-  input,button{width:100%;font-size:16px;padding:12px;border-radius:12px;border:1px solid #cfcfcf;background:#fff;appearance:none}
-  input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
-  .btns{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-  .btn-green{background:#16a34a;border-color:#16a34a;color:#fff}
-  .btn-orange{background:#f59e0b;border-color:#f59e0b;color:#fff}
-  .btn-blue{background:#2563eb;border-color:#2563eb;color:#fff}
-  .btn-red{background:#ef4444;border-color:#ef4444;color:#fff}
-  .muted{color:#666}
-  .out{font-weight:800}
-  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:12px;line-height:1.25;background:#f7f7f8}
+  h1{font-size:18px;margin:0 0 8px}
+  .card{border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  label{display:block;font-size:14px;margin:10px 0 4px}
+  input,select,button{font-size:16px;padding:10px;border-radius:8px;border:1px solid #ccc;width:100%}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .out{font-weight:600}
   table{width:100%;border-collapse:collapse;font-size:14px}
-  th,td{padding:8px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}
-  th{background:#fafafa;position:sticky;top:0;z-index:1}
+  th,td{border-bottom:1px solid #eee;padding:8px;text-align:left;vertical-align:top}
+  th{background:#fafafa;position:sticky;top:0}
+  .muted{color:#666}
+  .ok{background:#0a7; color:#fff; border-color:#0a7}
+  .warn{background:#f90; color:#fff; border-color:#f90}
+  .danger{background:#d33; color:#fff; border-color:#d33}
+  .btns{display:flex;gap:8px}
+  .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
   .footer{color:#888;font-size:12px;margin-top:8px}
 </style>
 </head>
@@ -39,45 +34,60 @@
   <div class="row">
     <div>
       <label for="mins">Minutes</label>
-      <input id="mins" type="number" inputmode="numeric" step="1" min="0" placeholder="e.g. 20">
+      <input id="mins" type="number" inputmode="numeric" step="1" min="0" placeholder="e.g. 17" />
     </div>
     <div>
       <label for="miles">Miles</label>
-      <input id="miles" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 5.0">
+      <input id="miles" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 2.8" />
     </div>
   </div>
 
   <div style="margin-top:10px">
     <label for="meter">Actual meter fare (optional)</label>
-    <input id="meter" type="number" inputmode="decimal" step="0.01" min="0" placeholder="e.g. 17.40">
+    <input id="meter" type="number" inputmode="decimal" step="0.01" min="0" placeholder="e.g. 17.40" />
   </div>
 
   <div class="row3" style="margin-top:12px">
-    <div><div class="muted">Rate 1</div><div class="out mono" id="r1">–</div></div>
-    <div><div class="muted">Rate 2</div><div class="out mono" id="r2">–</div></div>
-    <div><div class="muted">Rate 3</div><div class="out mono" id="r3">–</div></div>
+    <div>
+      <div class="muted">Rate 1</div>
+      <div class="out mono" id="r1">–</div>
+    </div>
+    <div>
+      <div class="muted">Rate 2</div>
+      <div class="out mono" id="r2">–</div>
+    </div>
+    <div>
+      <div class="muted">Rate 3</div>
+      <div class="out mono" id="r3">–</div>
+    </div>
   </div>
 
-  <div class="btns">
-    <button class="btn-green"  id="calcBtn">Calculate</button>
-    <button class="btn-orange" id="saveBtn">Save Journey</button>
-    <button class="btn-blue"   id="exportBtn">Export CSV</button>
-    <button class="btn-red"    id="clearBtn">Clear Log</button>
+  <div class="btns" style="margin-top:12px">
+    <button class="ok" id="calcBtn">Calculate</button>
+    <button id="saveBtn">Save Journey</button>
   </div>
-
-  <div class="footer">Works offline (PWA). Add to Home Screen if you like.</div>
+  <div class="footer">Add this to your Home Screen for a one-tap app. Works offline after first load.</div>
 </div>
 
 <div class="card">
+  <div class="btns" style="margin-bottom:8px">
+    <button id="exportBtn">Export CSV</button>
+    <button class="warn" id="clearBtn">Clear Log</button>
+  </div>
   <div class="muted">Saved Journeys</div>
-  <div style="max-height:45vh;overflow:auto;border:1px solid #eee;border-radius:10px;margin-top:6px">
-    <table>
+  <div style="max-height:45vh; overflow:auto; border:1px solid #eee; border-radius:8px; margin-top:6px">
+    <table id="logTbl">
       <thead>
-        <tr><th>#</th><th>When</th><th>Min</th><th>Mi</th>
-            <th>Rate 1 (core / range)</th>
-            <th>Rate 2 (core / range)</th>
-            <th>Rate 3 (core / range)</th>
-            <th>Meter</th></tr>
+        <tr>
+          <th>#</th>
+          <th>When</th>
+          <th>Min</th>
+          <th>Mi</th>
+          <th>Rate 1 (core / range)</th>
+          <th>Rate 2 (core / range)</th>
+          <th>Rate 3 (core / range)</th>
+          <th>Meter</th>
+        </tr>
       </thead>
       <tbody id="logBody"></tbody>
     </table>
@@ -85,56 +95,30 @@
 </div>
 
 <script>
-/* ===== Service worker registration (for offline) ===== */
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    // sw.js sits next to this file
-    navigator.serviceWorker.register('./sw.js').then(reg => {
-      // auto-update & refresh to avoid stale JS
-      reg.onupdatefound = () => {
-        const nw = reg.installing;
-        nw && (nw.onstatechange = () => {
-          if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-            nw.postMessage({action:'SKIP_WAITING'});
-            setTimeout(()=>location.reload(), 500);
-          }
-        });
-      };
-    }).catch(console.error);
-  });
-}
-
-/* ===== Tiny error banner (shows on iPhone if anything breaks) ===== */
-window.onerror = function(msg, src, line, col){
-  const box=document.createElement('div');
-  box.style.cssText='position:fixed;bottom:10px;left:10px;right:10px;background:#fee;border:1px solid #f99;padding:8px;border-radius:8px;color:#900;font:12px ui-monospace;z-index:9999';
-  box.textContent='JS error: '+msg+' @ '+(src||'inline')+':'+line+':'+col;
-  document.body.appendChild(box);
-};
-
-/* ===== Config (current logic) ===== */
+/* ========= CONFIG ========= */
 const cfg = {
-  base: 4.20,
-  inc : 0.20,
+  baseFare: 4.20,
+  inc: 0.20,
   rangeBands: [
-    { max:1.5, lower:{fixed:0.40,pct:0.03}, upper:{fixed:0.80,pct:0.07} },
-    { max:2.5, lower:{fixed:0.80,pct:0.05}, upper:{fixed:1.40,pct:0.09} },
-    { max:4.5, lower:{fixed:1.60,pct:0.06}, upper:{fixed:2.40,pct:0.09} },
-    { max:6.5, lower:{fixed:2.20,pct:0.06}, upper:{fixed:2.80,pct:0.07} },
-    { max:1e9, lower:{fixed:2.50,pct:0.03}, upper:{fixed:3.50,pct:0.06} },
+    { max: 1.5, lower:{fixed:0.40,pct:0.03}, upper:{fixed:0.80,pct:0.07} },
+    { max: 2.5, lower:{fixed:0.80,pct:0.05}, upper:{fixed:1.40,pct:0.09} },
+    { max: 4.5, lower:{fixed:1.60,pct:0.06}, upper:{fixed:2.40,pct:0.09} },
+    { max: 6.5, lower:{fixed:2.20,pct:0.06}, upper:{fixed:2.80,pct:0.07} },
+    { max: 1e9, lower:{fixed:2.50,pct:0.03}, upper:{fixed:3.50,pct:0.06} },
   ],
   rate1:{
     perMinute:[{upTo:12,v:0.30},{upTo:25,v:0.34},{v:0.40}],
     perMileRules:[
       {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:3.35},
       {when:{mMax:6.0}, v:3.60},
-      {when:{mMin:6.0001}, v:4.15}
+      {v:4.29}
     ],
     offsets:[]
   },
   rate2:{
     perMinute:[{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.60}],
     perMileRules:[
+      {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, v:3.80},
       {when:{mMin:20.0001}, v:4.15},
       {when:{mMin:7.5}, v:4.15},
       {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:4.05},
@@ -151,27 +135,22 @@ const cfg = {
   },
   rate3:{
     perMinute:[{upTo:12,v:0.58},{upTo:30,v:0.62},{v:0.44}],
-    perMileRules:[
-      {when:{mMax:6.0}, v:4.00},
-      {when:{mMin:6.0001}, v:4.15}
-    ],
+    perMileRules:[{v:4.00}],
     offsets:[
       {when:{mMax:0.5,tMax:5}, d:-1.20},
       {when:{mMax:0.8,tMax:5}, d:-0.60},
       {when:{mMin:1.8,mMax:2.2,tMin:9,tMax:12}, d:-1.40},
       {when:{mMin:5.5,mMax:6.3,tMin:28,tMax:40}, d:-1.60},
-      {when:{mMin:18,mMax:20,tMin:45,tMax:60}, d: 1.50}
+      {when:{mMin:18,mMax:20,tMin:45,tMax:60}, d:1.50}
     ]
   }
 };
 
-/* ===== Helpers ===== */
-const $       = id => document.getElementById(id);
-const r2      = x => Math.round(x*100)/100;
-const roundTo = (x,i)=> Math.round(x/i)*i;
-const floorTo = (x,i)=> Math.floor(x/i)*i;
-const ceilTo  = (x,i)=> Math.ceil (x/i)*i;
-const £       = n => '£'+r2(n).toFixed(2);
+/* ========= Helpers ========= */
+const r2 = (x)=>Math.round(x*100)/100;
+const roundTo = (x,inc)=>Math.round(x/inc)*inc;
+const floorTo  = (x,inc)=>Math.floor(x/inc)*inc;
+const ceilTo   = (x,inc)=>Math.ceil (x/inc)*inc;
 
 function matches(w, miles, mins){
   if(!w) return true;
@@ -189,13 +168,14 @@ function minutePart(tiers, mins){
   let rem=mins, used=0, sum=0;
   for(const t of tiers){
     if(t.upTo==null){ sum+=rem*t.v; break; }
-    const span=Math.max(0,Math.min(rem,t.upTo-used));
-    sum+=span*t.v; rem-=span; used+=span; if(rem<=0) break;
+    const span=Math.max(0, Math.min(rem, t.upTo-used));
+    sum += span*t.v; rem-=span; used+=span;
+    if(rem<=0) break;
   }
   return sum;
 }
 function sumOffsets(arr, miles, mins){
-  return (arr||[]).reduce((s,o)=>s+(matches(o.when,miles,mins)?o.d:0),0);
+  return arr.reduce((s,o)=>s+(matches(o.when,miles,mins)?o.d:0),0);
 }
 function longTrim(core, trim, miles, mins){
   if(!trim||!trim.enabled) return core;
@@ -204,53 +184,40 @@ function longTrim(core, trim, miles, mins){
   const dec = Math.max(trim.minAbs, roundTo(rounded*trim.pct, cfg.inc));
   return roundTo(rounded - dec, cfg.inc);
 }
-function bandFor(miles){
-  return cfg.rangeBands.find(x=>miles<=x.max) || cfg.rangeBands.at(-1);
-}
 function rangeAround(core, miles){
-  const b = bandFor(miles);
+  const b = cfg.rangeBands.find(x=>miles<=x.max) || cfg.rangeBands[cfg.rangeBands.length-1];
   const lowerAdj = Math.max(b.lower.fixed, core*b.lower.pct);
   const upperAdj = Math.max(b.upper.fixed, core*b.upper.pct);
-  return {
-    lower: floorTo(roundTo(core - lowerAdj, cfg.inc), cfg.inc),
-    upper:  ceilTo(roundTo(core + upperAdj, cfg.inc), cfg.inc)
-  };
+  const lower = floorTo(roundTo(core - lowerAdj, cfg.inc), cfg.inc);
+  const upper = ceilTo (roundTo(core + upperAdj, cfg.inc), cfg.inc);
+  return {lower, upper};
 }
 
-/* ===== Core calc ===== */
+/* ========= Core calculators ========= */
 function estimate(rateKey, mins, miles){
   const r = cfg[rateKey];
-  const mPart   = minutePart(r.perMinute, mins);
+  const mPart = minutePart(r.perMinute, mins);
   const perMile = pickPerMile(r.perMileRules, miles, mins);
-  let core = cfg.base + mPart + perMile*miles + sumOffsets(r.offsets, miles, mins);
+  let core = cfg.baseFare + mPart + perMile*miles + sumOffsets(r.offsets||[], miles, mins);
   if(rateKey==='rate2') core = longTrim(core, r.longTrim, miles, mins);
   core = roundTo(core, cfg.inc);
-  const {lower, upper} = rangeAround(core, miles);
-  return {core, lower, upper};
+  const rng = rangeAround(core, miles);
+  return { core, lower:rng.lower, upper:rng.upper };
 }
 
-/* ===== Monotonic guard: enforce R1 ≤ R2 ≤ R3 ===== */
-function orderGuard(r1, r2, r3, miles){
-  if(r2.core < r1.core) r2.core = r1.core;
-  if(r3.core < r2.core) r3.core = r2.core;
-  Object.assign(r1, rangeAround(r1.core, miles));
-  Object.assign(r2, rangeAround(r2.core, miles));
-  Object.assign(r3, rangeAround(r3.core, miles));
-  return {r1,r2,r3};
-}
-
-/* ===== UI ===== */
-function fmtRange(core, lo, hi){ return `${£(core)}  (${£(lo)}–${£(hi)})`; }
+/* ========= UI wiring ========= */
+const $ = (id)=>document.getElementById(id);
+function fmt(x){ return '£'+r2(x).toFixed(2); }
+function fmtRange(core,lo,hi){ return `${fmt(core)}  (${fmt(lo)}–${fmt(hi)})`; }
 
 function refresh(){
-  const mins  = Number($('mins').value);
-  const miles = Number($('miles').value);
-  if(Number.isNaN(mins) || Number.isNaN(miles)) return;
+  const mins = Number($('mins').value);
+  const miles= Number($('miles').value);
+  if(Number.isNaN(mins)||Number.isNaN(miles)) return;
 
-  let r1 = estimate('rate1', mins, miles);
-  let r2 = estimate('rate2', mins, miles);
-  let r3 = estimate('rate3', mins, miles);
-  ({r1,r2,r3} = orderGuard(r1, r2, r3, miles));
+  const r1 = estimate('rate1', mins, miles);
+  const r2 = estimate('rate2', mins, miles);
+  const r3 = estimate('rate3', mins, miles);
 
   $('r1').textContent = fmtRange(r1.core, r1.lower, r1.upper);
   $('r2').textContent = fmtRange(r2.core, r2.lower, r2.upper);
@@ -259,57 +226,96 @@ function refresh(){
   return {mins, miles, r1, r2, r3};
 }
 
-/* ===== Logging & CSV ===== */
+/* ========= Logging (localStorage) ========= */
 const KEY='cabwizz_log_v1';
-const loadLog=()=>{ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ return [] } };
-const saveLog=rows=>{ localStorage.setItem(KEY, JSON.stringify(rows)); renderLog(); };
-
-function stampParts(d=new Date()){
-  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  const p=n=>String(n).padStart(2,'0');
-  return { day:days[d.getDay()], date:`${p(d.getDate())}/${p(d.getMonth()+1)}/${d.getFullYear()}`, time:`${p(d.getHours())}:${p(d.getMinutes())}` };
-}
+function loadLog(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ return [] } }
+function saveLog(rows){ localStorage.setItem(KEY, JSON.stringify(rows)); renderLog(); }
 function renderLog(){
-  const body=$('logBody'); body.innerHTML='';
-  const rows=loadLog();
-  const cur=n=>n===''?'':'£'+Number(n).toFixed(2);
+  const body = $('logBody'); body.innerHTML='';
+  const rows = loadLog();
   rows.forEach((r,i)=>{
     const tr=document.createElement('tr');
-    const when = `${r.day.slice(0,3)} ${r.date} ${r.time}`;
-    tr.innerHTML=`<td>${i+1}</td><td class="mono">${when}</td><td>${r.mins}</td><td>${r.miles}</td>
-      <td class="mono">${cur(r.r1c)} (${cur(r.r1l)}–${cur(r.r1u)})</td>
-      <td class="mono">${cur(r.r2c)} (${cur(r.r2l)}–${cur(r.r2u)})</td>
-      <td class="mono">${cur(r.r3c)} (${cur(r.r3l)}–${cur(r.r3u)})</td>
-      <td>${cur(r.meter)}</td>`;
+    tr.innerHTML = `
+      <td>${i+1}</td>
+      <td class="mono">${r.when}</td>
+      <td>${r.mins}</td>
+      <td>${r.miles}</td>
+      <td class="mono">${r.r1}</td>
+      <td class="mono">${r.r2}</td>
+      <td class="mono">${r.r3}</td>
+      <td>${r.meter? '£'+Number(r.meter).toFixed(2):''}</td>
+    `;
     body.appendChild(tr);
   });
 }
-function exportCSV(){
-  const rows=loadLog();
-  const head=['Day','Date','Time','Minutes','Miles','R1 core','R1 lower','R1 upper','R2 core','R2 lower','R2 upper','R3 core','R3 lower','R3 upper','Meter'];
-  const cur=n=>n===''?'':`£${Number(n).toFixed(2)}`;
-  const csv=[head, ...rows.map(r=>[r.day,r.date,r.time,r.mins,r.miles,cur(r.r1c),cur(r.r1l),cur(r.r1u),cur(r.r2c),cur(r.r2l),cur(r.r2u),cur(r.r3c),cur(r.r3l),cur(r.r3u),cur(r.meter)])]
-    .map(a=>a.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\r\n');
-  const blob=new Blob(['\uFEFF',csv],{type:'text/csv;charset=utf-8;'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='cabwizz_journeys.csv'; a.click(); URL.revokeObjectURL(a.href);
+
+function weekdayStamp(d=new Date()){
+  const wk=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+  const pad=n=>String(n).padStart(2,'0');
+  return `${wk} ${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/* Events */
-$('calcBtn').addEventListener('click', ()=>{ const r=refresh(); if(!r) alert('Enter minutes and miles first'); });
-$('saveBtn').addEventListener('click', ()=>{
-  const res=refresh(); if(!res) return;
-  const parts=stampParts();
-  const row={ day:parts.day,date:parts.date,time:parts.time, mins:res.mins,miles:res.miles,
-    r1c:res.r1.core,r1l:res.r1.lower,r1u:res.r1.upper,
-    r2c:res.r2.core,r2l:res.r2.lower,r2u:res.r2.upper,
-    r3c:res.r3.core,r3l:res.r3.lower,r3u:res.r3.upper,
-    meter:$('meter').value?Number($('meter').value):'' };
-  const rows=loadLog(); rows.push(row); saveLog(rows); $('meter').value='';
+/* ========= Export CSV ========= */
+function exportCSV(){
+  const rows = loadLog();
+  const head = ['#','When','Minutes','Miles','Rate1 (core/range)','Rate2 (core/range)','Rate3 (core/range)','Meter'];
+  const csv = [head].concat(rows.map((r,i)=>[
+    i+1, r.when, r.mins, r.miles, r.r1, r.r2, r.r3, r.meter||''
+  ])).map(arr=>arr.map(v=>{
+    const s=String(v).replaceAll('"','""');
+    return `"${s}"`;
+  }).join(',')).join('\r\n');
+
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='cabwizz_journeys.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ========= Optional webhook to Google Sheets ========= */
+const WEBHOOK_URL = '';
+async function sendWebhook(payload){
+  if(!WEBHOOK_URL) return;
+  try{
+    await fetch(WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  }catch(e){ console.warn('Webhook failed',e); }
+}
+
+/* ========= Events ========= */
+document.getElementById('calcBtn').addEventListener('click', refresh);
+document.getElementById('saveBtn').addEventListener('click', async ()=>{
+  const res = refresh(); if(!res) return;
+  const meter = document.getElementById('meter').value;
+  const row = {
+    when: weekdayStamp(),
+    mins: res.mins, miles: res.miles,
+    r1: fmtRange(res.r1.core,res.r1.lower,res.r1.upper),
+    r2: fmtRange(res.r2.core,res.r2.lower,res.r2.upper),
+    r3: fmtRange(res.r3.core,res.r3.lower,res.r3.upper),
+    meter: meter? Number(meter).toFixed(2):''
+  };
+  const rows = loadLog(); rows.push(row); saveLog(rows);
+  await sendWebhook(row);
+  document.getElementById('meter').value='';
 });
-$('clearBtn').addEventListener('click',()=>{ if(confirm('Clear ALL saved journeys?')) saveLog([]); });
-$('exportBtn').addEventListener('click', exportCSV);
-['mins','miles'].forEach(id=>$(id).addEventListener('input', ()=>{ if($(id).value!=='') refresh(); }));
+document.getElementById('clearBtn').addEventListener('click', ()=>{
+  if(confirm('Clear ALL saved journeys?')){ saveLog([]); }
+});
+document.getElementById('exportBtn').addEventListener('click', exportCSV);
+['mins','miles'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', ()=>{ if(document.getElementById(id).value!=='') refresh(); });
+});
 renderLog();
+
+// Register service worker when hosted (https/http), not for file://
+if (location.protocol.startsWith('http') && 'serviceWorker' in navigator) {
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(console.warn);
+  });
+}
 </script>
 </body>
 </html>
+

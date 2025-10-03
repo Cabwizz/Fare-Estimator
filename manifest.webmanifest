@@ -1,0 +1,10 @@
+{
+  "name": "CabWizz Fare Estimator",
+  "short_name": "CabWizz",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "icons": []
+}

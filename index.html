@@ -147,29 +147,15 @@ const cfg = {
     { max: 6.5, lower:{fixed:2.20,pct:0.06}, upper:{fixed:2.80,pct:0.07} },
     { max: 1e9, lower:{fixed:2.50,pct:0.03}, upper:{fixed:3.50,pct:0.06} },
   ],
-  
- rate1:{
-  perMinute:[{upTo:12,v:0.30},{upTo:25,v:0.34},{v:0.40}],
-  perMileRules:[
-    /* keep your short-window special */
-    {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:3.35},
-
-    /* NEW mileage-shaped bands for R1 */
-    {when:{mMin:25}, v:3.65},
-    {when:{mMin:15}, v:3.80},
-    {when:{mMin:7},  v:4.00},
-
-    /* existing ≤6 mi rule */
-    {when:{mMax:6.0}, v:3.60},
-
-    /* fallback (rarely used now; covers 6–7 mi if needed) */
-    {v:4.29}
-  ],
-  offsets:[],
-  /* keep very-long softener */
-  longTrim:{ enabled:true, when:{mMin:20,tMin:55}, pct:0.06, minAbs:4.00 }
-},
-
+  rate1:{
+    perMinute:[{upTo:12,v:0.30},{upTo:25,v:0.34},{v:0.40}],
+    perMileRules:[
+      {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:3.35},
+      {when:{mMax:6.0}, v:3.55},
+      {v:4.29}
+    ],
+    offsets:[],
+    longTrim:{ enabled:true, when:{mMin:20,tMin:55}, pct:0.06, minAbs:4.00 }
   },
   rate2:{
     perMinute:[{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.60}],

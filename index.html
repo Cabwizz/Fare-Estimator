@@ -7,31 +7,65 @@
 <meta name="theme-color" content="#0a7">
 <title>CabWizz Fare Estimator</title>
 <style>
-  :root{--ok:#0a7;--warn:#f90;--info:#06c;--danger:#d33}
+  :root{--ok:#0a7;--warn:#f8a100;--info:#1869ff;--danger:#d33}
+
+  /* Global */
   *{box-sizing:border-box}
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:12px;line-height:1.25;background:#f7f7f8}
-  h1{font-size:18px;margin:0 0 8px}
-  .card{border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.04)}
-  label{display:block;font-size:14px;margin:10px 0 4px}
-  input,select,button{font-size:16px;padding:10px;border-radius:8px;border:1px solid #ccc;width:100%}
-  .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
-  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-  .out{font-weight:600}
-  table{width:100%;border-collapse:collapse;font-size:14px}
-  th,td{border-bottom:1px solid #eee;padding:8px;text-align:left;vertical-align:top}
-  th{background:#fafafa;position:sticky;top:0}
-  .muted{color:#666}
-  .btns{display:flex;flex-direction:column;gap:8px}
-  .ok{background:var(--ok); color:#fff; border-color:var(--ok)}
-  .warn{background:var(--warn); color:#fff; border-color:var(--warn)}
-  .info{background:var(--info); color:#fff; border-color:var(--info)}
-  .danger{background:var(--danger); color:#fff; border-color:var(--danger)}
-  .mono{font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace}
-  .footer{color:#888;font-size:12px;margin-top:8px}
-  @media (max-width: 420px){
-    .row{grid-template-columns:1fr}
-    .row3{grid-template-columns:1fr}
+  body{
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    margin:12px; line-height:1.25; background:#f7f7f8; color:#111;
   }
+  h1{font-size:18px;margin:0 0 8px}
+
+  /* Cards */
+  .card{
+    border:1px solid #e5e5ea;
+    border-radius:16px;
+    padding:14px;
+    margin:10px 0;
+    background:#fff;
+    box-shadow:0 1px 0 rgba(0,0,0,.04);
+  }
+
+  /* Form bits */
+  label{display:block;font-size:14px;margin:10px 0 6px;color:#333}
+  input,select,button{
+    font-size:16px;
+    padding:12px 14px;
+    border-radius:14px;
+    border:1px solid #d1d1d6;
+    width:100%;
+    background:#fff;
+  }
+  input::placeholder{color:#b0b0b5}
+  .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+  @media (max-width:420px){ .row{grid-template-columns:1fr} }
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  @media (max-width:420px){ .row3{grid-template-columns:1fr} }
+
+  /* Output */
+  .out{font-weight:700}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .muted{color:#666}
+
+  /* Buttons: stacked, pill, colored */
+  .btns{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+  .btn{
+    border:none; color:#fff; font-weight:600; text-align:center;
+    border-radius:16px; padding:14px; width:100%;
+    box-shadow:0 1px 0 rgba(0,0,0,.08), inset 0 -1px 0 rgba(0,0,0,.08);
+  }
+  .ok{background:var(--ok)}
+  .warn{background:var(--warn)}
+  .info{background:var(--info)}
+  .danger{background:var(--danger)}
+
+  /* Table */
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{border-bottom:1px solid #eee;padding:10px;text-align:left;vertical-align:top}
+  th{background:#fafafa;position:sticky;top:0}
+  /* Footer note under the buttons like your screenshot */
+  .tiny{color:#888;font-size:12px;margin-top:6px}
 </style>
 </head>
 <body>
@@ -41,11 +75,11 @@
   <div class="row">
     <div>
       <label for="mins">Minutes</label>
-      <input id="mins" type="number" inputmode="numeric" step="1" min="0" placeholder="e.g. 17" />
+      <input id="mins" type="number" inputmode="numeric" step="1" min="0" placeholder="e.g. 20" />
     </div>
     <div>
       <label for="miles">Miles</label>
-      <input id="miles" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 2.8" />
+      <input id="miles" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 5.0" />
     </div>
   </div>
 
@@ -69,19 +103,19 @@
     </div>
   </div>
 
-  <!-- Stacked buttons in requested order -->
-  <div class="btns" style="margin-top:12px">
-    <button class="ok" id="calcBtn">Calculate</button>
-    <button class="warn" id="saveBtn">Save Journey</button>
-    <button class="info" id="exportBtn">Export CSV</button>
-    <button class="danger" id="clearBtn">Clear Log</button>
+  <!-- Stacked buttons in the exact order/colors from your screenshot -->
+  <div class="btns">
+    <button class="btn ok" id="calcBtn">Calculate</button>
+    <button class="btn warn" id="saveBtn">Save Journey</button>
+    <button class="btn info" id="exportBtn">Export CSV</button>
+    <button class="btn danger" id="clearBtn">Clear Log</button>
   </div>
-  <div class="footer">Add this to your Home Screen for a one-tap app. Works offline after first load.</div>
+  <div class="tiny">One-file version (no caching). Add to Home Screen if you like.</div>
 </div>
 
 <div class="card">
   <div class="muted">Saved Journeys</div>
-  <div style="max-height:45vh; overflow:auto; border:1px solid #eee; border-radius:8px; margin-top:6px">
+  <div style="max-height:45vh; overflow:auto; border:1px solid #eee; border-radius:12px; margin-top:6px">
     <table id="logTbl">
       <thead>
         <tr>
@@ -102,6 +136,7 @@
 
 <script>
 /* ========= CONFIG ========= */
+/* (kept same logic you approved, including long-journey softening) */
 const cfg = {
   baseFare: 4.20,
   inc: 0.20,
@@ -119,7 +154,6 @@ const cfg = {
       {when:{mMax:6.0}, v:3.60},
       {v:4.29}
     ],
-    /* NEW: keep short/medium trips as-is; only trim *very long* */
     offsets:[],
     longTrim:{ enabled:true, when:{mMin:20,tMin:55}, pct:0.06, minAbs:4.00 }
   },
@@ -144,14 +178,13 @@ const cfg = {
   rate3:{
     perMinute:[{upTo:12,v:0.58},{upTo:30,v:0.62},{v:0.44}],
     perMileRules:[{v:4.00}],
-    /* TINY down-adjustment in your “a bit high” window */
     offsets:[
       {when:{mMax:0.5,tMax:5}, d:-1.20},
       {when:{mMax:0.8,tMax:5}, d:-0.60},
       {when:{mMin:1.8,mMax:2.2,tMin:9,tMax:12}, d:-1.40},
       {when:{mMin:5.5,mMax:6.3,tMin:28,tMax:40}, d:-1.60},
       {when:{mMin:18,mMax:20,tMin:45,tMax:60}, d:1.50},
-      {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, d:-1.80} /* NEW */
+      {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, d:-1.80}
     ]
   }
 };

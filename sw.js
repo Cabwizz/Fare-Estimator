@@ -1,4 +1,4 @@
-const CACHE='cabwizz-cache-v1';
+const CACHE='cabwizz-cache-v4'; // bump version
 const ASSETS=['./','index.html','sw.js','manifest.webmanifest'];
 
 self.addEventListener('install',e=>{

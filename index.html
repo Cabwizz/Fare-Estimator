@@ -7,23 +7,39 @@
 <meta name="theme-color" content="#0a7">
 <title>CabWizz Fare Estimator</title>
 <style>
-  :root{--ok:#0a7;--warn:#f8a100;--info:#1869ff;--danger:#d33}
+  :root{--ok:#0a7;--warn:#f8a100;--info:#1869ff;--danger:#d33;--stroke:#d1d1d6}
   *{box-sizing:border-box}
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:12px;line-height:1.25;background:#f7f7f8;color:#111}
   h1{font-size:18px;margin:0 0 8px}
   .card{border:1px solid #e5e5ea;border-radius:16px;padding:14px;margin:10px 0;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.04)}
   label{display:block;font-size:14px;margin:10px 0 6px;color:#333}
-  input,select,button{font-size:16px;padding:12px 14px;border-radius:14px;border:1px solid #d1d1d6;width:100%;background:#fff}
+  input,select,button{
+    font-size:16px;padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);width:100%;background:#fff
+  }
   input::placeholder{color:#b0b0b5}
   .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
   @media (max-width:420px){ .row,.row3{grid-template-columns:1fr} }
+
+  /* --- Time input alignment --- */
+  .timeRow input[type="time"]{
+    -webkit-appearance:none; appearance:none;
+    text-align:center; font-variant-numeric: tabular-nums;
+    line-height:1; min-height:48px; /* force equal height */
+  }
+  .timeRow .cell{display:flex;align-items:center}
+  .timeRow .cell input{width:100%}
+
   .out{font-weight:700}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   .muted{color:#666}
+
   .btns{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-  .btn{border:none;color:#fff;font-weight:600;text-align:center;border-radius:16px;padding:14px;width:100%;box-shadow:0 1px 0 rgba(0,0,0,.08), inset 0 -1px 0 rgba(0,0,0,.08)}
+  .btn{border:none;color:#fff;font-weight:600;text-align:center;border-radius:16px;padding:14px;width:100%;
+       box-shadow:0 1px 0 rgba(0,0,0,.08), inset 0 -1px 0 rgba(0,0,0,.08)}
   .ok{background:var(--ok)} .warn{background:var(--warn)} .info{background:var(--info)} .danger{background:var(--danger)}
+  .btn.outline-danger{background:#fff;color:var(--danger);border:1px solid var(--danger);box-shadow:none}
+
   table{width:100%;border-collapse:collapse;font-size:14px}
   th,td{border-bottom:1px solid #eee;padding:10px;text-align:left;vertical-align:top}
   th{background:#fafafa;position:sticky;top:0}
@@ -34,17 +50,22 @@
 <h1>CabWizz Fare Estimator</h1>
 
 <div class="card">
-  <!-- NEW: Start/End inputs (time + mileage) -->
-  <div class="row">
-    <div>
-      <label for="tStart">Start time</label>
-      <input id="tStart" type="time" step="60" />
+  <!-- aligned time row -->
+  <div class="row timeRow">
+    <div class="cell">
+      <div style="width:100%">
+        <label for="tStart">Start time</label>
+        <input id="tStart" type="time" step="60" />
+      </div>
     </div>
-    <div>
-      <label for="tEnd">End time</label>
-      <input id="tEnd" type="time" step="60" />
+    <div class="cell">
+      <div style="width:100%">
+        <label for="tEnd">End time</label>
+        <input id="tEnd" type="time" step="60" />
+      </div>
     </div>
   </div>
+
   <div class="row">
     <div>
       <label for="miStart">Start mileage</label>
@@ -56,7 +77,6 @@
     </div>
   </div>
 
-  <!-- Existing manual fields (auto-filled if you use the new ones) -->
   <div class="row" style="margin-top:6px">
     <div>
       <label for="mins">Minutes</label>
@@ -83,6 +103,7 @@
     <button class="btn ok" id="calcBtn">Calculate</button>
     <button class="btn warn" id="saveBtn">Save Journey</button>
     <button class="btn info" id="exportBtn">Export CSV</button>
+    <button class="btn outline-danger" id="delPrevBtn">Delete Previous</button>
     <button class="btn danger" id="clearBtn">Clear Log</button>
   </div>
   <div class="tiny">One-file version (no caching). Add to Home Screen if you like.</div>
@@ -104,7 +125,7 @@
 </div>
 
 <script>
-/* ===== CONFIG (same tuning as your current build) ===== */
+/* ===== CONFIG (unchanged fare logic you’re using) ===== */
 const cfg = {
   baseFare: 4.20,
   inc: 0.20,
@@ -208,8 +229,8 @@ function rangeAround(core, miles){
   return {lower, upper};
 }
 
-/* ===== NEW: compute mins/miles from Start/End if provided ===== */
-function parseTimeToMinutes(t){ // t = "HH:MM"
+/* ===== Start/End → mins/miles ===== */
+function parseTimeToMinutes(t){
   if(!t || !/^\d{2}:\d{2}$/.test(t)) return null;
   const [H,M] = t.split(':').map(Number);
   return H*60 + M;
@@ -219,7 +240,7 @@ function computeFromStartEnd(){
   const tE = parseTimeToMinutes($('tEnd').value);
   if(tS!=null && tE!=null){
     let diff = tE - tS;
-    if(diff < 0) diff += 24*60;            // handle past-midnight
+    if(diff < 0) diff += 24*60;
     $('mins').value = String(Math.max(0, Math.round(diff)));
   }
   const ms = Number($('miStart').value);
@@ -246,8 +267,7 @@ function fmt(x){ return '£'+r2(x).toFixed(2); }
 function fmtRange(core,lo,hi){ return `${fmt(core)}  (${fmt(lo)}–${fmt(hi)})`; }
 
 function refresh(){
-  computeFromStartEnd(); // <— NEW: auto-fill mins/miles if start/end provided
-
+  computeFromStartEnd();
   const mins = Number($('mins').value);
   const miles= Number($('miles').value);
   if(Number.isNaN(mins)||Number.isNaN(miles)) return;
@@ -329,7 +349,16 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
   await sendWebhook(row);
   document.getElementById('meter').value='';
 });
+document.getElementById('delPrevBtn').addEventListener('click', ()=>{
+  const rows = loadLog();
+  if(!rows.length) return;
+  if(confirm('Delete the most recent saved journey?')){
+    rows.pop(); saveLog(rows);
+  }
+});
 document.getElementById('clearBtn').addEventListener('click', ()=>{
+  const rows = loadLog();
+  if(!rows.length) return;
   if(confirm('Clear ALL saved journeys?')){ saveLog([]); }
 });
 document.getElementById('exportBtn').addEventListener('click', exportCSV);

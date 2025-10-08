@@ -8,63 +8,25 @@
 <title>CabWizz Fare Estimator</title>
 <style>
   :root{--ok:#0a7;--warn:#f8a100;--info:#1869ff;--danger:#d33}
-
-  /* Global */
   *{box-sizing:border-box}
-  body{
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
-    margin:12px; line-height:1.25; background:#f7f7f8; color:#111;
-  }
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:12px;line-height:1.25;background:#f7f7f8;color:#111}
   h1{font-size:18px;margin:0 0 8px}
-
-  /* Cards */
-  .card{
-    border:1px solid #e5e5ea;
-    border-radius:16px;
-    padding:14px;
-    margin:10px 0;
-    background:#fff;
-    box-shadow:0 1px 0 rgba(0,0,0,.04);
-  }
-
-  /* Form bits */
+  .card{border:1px solid #e5e5ea;border-radius:16px;padding:14px;margin:10px 0;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.04)}
   label{display:block;font-size:14px;margin:10px 0 6px;color:#333}
-  input,select,button{
-    font-size:16px;
-    padding:12px 14px;
-    border-radius:14px;
-    border:1px solid #d1d1d6;
-    width:100%;
-    background:#fff;
-  }
+  input,select,button{font-size:16px;padding:12px 14px;border-radius:14px;border:1px solid #d1d1d6;width:100%;background:#fff}
   input::placeholder{color:#b0b0b5}
   .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
-  @media (max-width:420px){ .row{grid-template-columns:1fr} }
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-  @media (max-width:420px){ .row3{grid-template-columns:1fr} }
-
-  /* Output */
+  @media (max-width:420px){ .row,.row3{grid-template-columns:1fr} }
   .out{font-weight:700}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   .muted{color:#666}
-
-  /* Buttons: stacked, pill, colored */
   .btns{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-  .btn{
-    border:none; color:#fff; font-weight:600; text-align:center;
-    border-radius:16px; padding:14px; width:100%;
-    box-shadow:0 1px 0 rgba(0,0,0,.08), inset 0 -1px 0 rgba(0,0,0,.08);
-  }
-  .ok{background:var(--ok)}
-  .warn{background:var(--warn)}
-  .info{background:var(--info)}
-  .danger{background:var(--danger)}
-
-  /* Table */
+  .btn{border:none;color:#fff;font-weight:600;text-align:center;border-radius:16px;padding:14px;width:100%;box-shadow:0 1px 0 rgba(0,0,0,.08), inset 0 -1px 0 rgba(0,0,0,.08)}
+  .ok{background:var(--ok)} .warn{background:var(--warn)} .info{background:var(--info)} .danger{background:var(--danger)}
   table{width:100%;border-collapse:collapse;font-size:14px}
   th,td{border-bottom:1px solid #eee;padding:10px;text-align:left;vertical-align:top}
   th{background:#fafafa;position:sticky;top:0}
-  /* Footer note under the buttons like your screenshot */
   .tiny{color:#888;font-size:12px;margin-top:6px}
 </style>
 </head>
@@ -72,14 +34,37 @@
 <h1>CabWizz Fare Estimator</h1>
 
 <div class="card">
+  <!-- NEW: Start/End inputs (time + mileage) -->
   <div class="row">
     <div>
+      <label for="tStart">Start time</label>
+      <input id="tStart" type="time" step="60" />
+    </div>
+    <div>
+      <label for="tEnd">End time</label>
+      <input id="tEnd" type="time" step="60" />
+    </div>
+  </div>
+  <div class="row">
+    <div>
+      <label for="miStart">Start mileage</label>
+      <input id="miStart" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 12034.5" />
+    </div>
+    <div>
+      <label for="miEnd">End mileage</label>
+      <input id="miEnd" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 12040.1" />
+    </div>
+  </div>
+
+  <!-- Existing manual fields (auto-filled if you use the new ones) -->
+  <div class="row" style="margin-top:6px">
+    <div>
       <label for="mins">Minutes</label>
-      <input id="mins" type="number" inputmode="numeric" step="1" min="0" placeholder="e.g. 20" />
+      <input id="mins" type="number" inputmode="numeric" step="1" min="0" placeholder="e.g. 17" />
     </div>
     <div>
       <label for="miles">Miles</label>
-      <input id="miles" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 5.0" />
+      <input id="miles" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 2.8" />
     </div>
   </div>
 
@@ -89,21 +74,11 @@
   </div>
 
   <div class="row3" style="margin-top:12px">
-    <div>
-      <div class="muted">Rate 1</div>
-      <div class="out mono" id="r1">–</div>
-    </div>
-    <div>
-      <div class="muted">Rate 2</div>
-      <div class="out mono" id="r2">–</div>
-    </div>
-    <div>
-      <div class="muted">Rate 3</div>
-      <div class="out mono" id="r3">–</div>
-    </div>
+    <div><div class="muted">Rate 1</div><div class="out mono" id="r1">–</div></div>
+    <div><div class="muted">Rate 2</div><div class="out mono" id="r2">–</div></div>
+    <div><div class="muted">Rate 3</div><div class="out mono" id="r3">–</div></div>
   </div>
 
-  <!-- Stacked buttons in the exact order/colors from your screenshot -->
   <div class="btns">
     <button class="btn ok" id="calcBtn">Calculate</button>
     <button class="btn warn" id="saveBtn">Save Journey</button>
@@ -119,14 +94,8 @@
     <table id="logTbl">
       <thead>
         <tr>
-          <th>#</th>
-          <th>When</th>
-          <th>Min</th>
-          <th>Mi</th>
-          <th>Rate 1 (core / range)</th>
-          <th>Rate 2 (core / range)</th>
-          <th>Rate 3 (core / range)</th>
-          <th>Meter</th>
+          <th>#</th><th>When</th><th>Min</th><th>Mi</th>
+          <th>Rate 1 (core / range)</th><th>Rate 2 (core / range)</th><th>Rate 3 (core / range)</th><th>Meter</th>
         </tr>
       </thead>
       <tbody id="logBody"></tbody>
@@ -135,8 +104,7 @@
 </div>
 
 <script>
-/* ========= CONFIG ========= */
-/* (kept same logic you approved, including long-journey softening) */
+/* ===== CONFIG (same tuning as your current build) ===== */
 const cfg = {
   baseFare: 4.20,
   inc: 0.20,
@@ -151,7 +119,10 @@ const cfg = {
     perMinute:[{upTo:12,v:0.30},{upTo:25,v:0.34},{v:0.40}],
     perMileRules:[
       {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:3.35},
-      {when:{mMax:6.0}, v:3.55},
+      {when:{mMin:25}, v:3.65},
+      {when:{mMin:15}, v:3.80},
+      {when:{mMin:7},  v:4.00},
+      {when:{mMax:6.0}, v:3.60},
       {v:4.29}
     ],
     offsets:[],
@@ -189,11 +160,12 @@ const cfg = {
   }
 };
 
-/* ========= Helpers ========= */
+/* ===== Helpers ===== */
 const r2 = (x)=>Math.round(x*100)/100;
 const roundTo = (x,inc)=>Math.round(x/inc)*inc;
 const floorTo  = (x,inc)=>Math.floor(x/inc)*inc;
 const ceilTo   = (x,inc)=>Math.ceil (x/inc)*inc;
+const $ = (id)=>document.getElementById(id);
 
 function matches(w, miles, mins){
   if(!w) return true;
@@ -236,7 +208,29 @@ function rangeAround(core, miles){
   return {lower, upper};
 }
 
-/* ========= Core calculators ========= */
+/* ===== NEW: compute mins/miles from Start/End if provided ===== */
+function parseTimeToMinutes(t){ // t = "HH:MM"
+  if(!t || !/^\d{2}:\d{2}$/.test(t)) return null;
+  const [H,M] = t.split(':').map(Number);
+  return H*60 + M;
+}
+function computeFromStartEnd(){
+  const tS = parseTimeToMinutes($('tStart').value);
+  const tE = parseTimeToMinutes($('tEnd').value);
+  if(tS!=null && tE!=null){
+    let diff = tE - tS;
+    if(diff < 0) diff += 24*60;            // handle past-midnight
+    $('mins').value = String(Math.max(0, Math.round(diff)));
+  }
+  const ms = Number($('miStart').value);
+  const me = Number($('miEnd').value);
+  if(!Number.isNaN(ms) && !Number.isNaN(me) && $('miStart').value!=='' && $('miEnd').value!==''){
+    const m = Math.max(0, r2(me - ms));
+    $('miles').value = String(m);
+  }
+}
+
+/* ===== Core calculators ===== */
 function estimate(rateKey, mins, miles){
   const r = cfg[rateKey];
   const mPart = minutePart(r.perMinute, mins);
@@ -248,12 +242,12 @@ function estimate(rateKey, mins, miles){
   return { core, lower:rng.lower, upper:rng.upper };
 }
 
-/* ========= UI wiring ========= */
-const $ = (id)=>document.getElementById(id);
 function fmt(x){ return '£'+r2(x).toFixed(2); }
 function fmtRange(core,lo,hi){ return `${fmt(core)}  (${fmt(lo)}–${fmt(hi)})`; }
 
 function refresh(){
+  computeFromStartEnd(); // <— NEW: auto-fill mins/miles if start/end provided
+
   const mins = Number($('mins').value);
   const miles= Number($('miles').value);
   if(Number.isNaN(mins)||Number.isNaN(miles)) return;
@@ -269,7 +263,7 @@ function refresh(){
   return {mins, miles, r1, r2, r3};
 }
 
-/* ========= Logging (localStorage) ========= */
+/* ===== Logging ===== */
 const KEY='cabwizz_log_v1';
 function loadLog(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ return [] } }
 function saveLog(rows){ localStorage.setItem(KEY, JSON.stringify(rows)); renderLog(); }
@@ -279,55 +273,47 @@ function renderLog(){
   rows.forEach((r,i)=>{
     const tr=document.createElement('tr');
     tr.innerHTML = `
-      <td>${i+1}</td>
-      <td class="mono">${r.when}</td>
-      <td>${r.mins}</td>
-      <td>${r.miles}</td>
-      <td class="mono">${r.r1}</td>
-      <td class="mono">${r.r2}</td>
-      <td class="mono">${r.r3}</td>
-      <td>${r.meter? '£'+Number(r.meter).toFixed(2):''}</td>
-    `;
+      <td>${i+1}</td><td class="mono">${r.when}</td>
+      <td>${r.mins}</td><td>${r.miles}</td>
+      <td class="mono">${r.r1}</td><td class="mono">${r.r2}</td><td class="mono">${r.r3}</td>
+      <td>${r.meter? '£'+Number(r.meter).toFixed(2):''}</td>`;
     body.appendChild(tr);
   });
 }
-
 function weekdayStamp(d=new Date()){
   const wk=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
   const pad=n=>String(n).padStart(2,'0');
   return `${wk} ${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/* ========= Export CSV ========= */
+/* ===== CSV Export ===== */
 function exportCSV(){
   const rows = loadLog();
   const head = ['#','When','Minutes','Miles','Rate1 (core/range)','Rate2 (core/range)','Rate3 (core/range)','Meter'];
   const csv = [head].concat(rows.map((r,i)=>[
     i+1, r.when, r.mins, r.miles, r.r1, r.r2, r.r3, r.meter||''
   ])).map(arr=>arr.map(v=>{
-    const s=String(v).replaceAll('"','""');
-    return `"${s}"`;
+    const s=String(v).replaceAll('"','""'); return `"${s}"`;
   }).join(',')).join('\r\n');
 
   const blob = new Blob([csv],{type:'text/csv'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='cabwizz_journeys.csv';
-  a.click();
-  URL.revokeObjectURL(a.href);
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='cabwizz_journeys.csv'; a.click(); URL.revokeObjectURL(a.href);
 }
 
-/* ========= Optional webhook to Google Sheets ========= */
+/* ===== Optional webhook ===== */
 const WEBHOOK_URL = '';
 async function sendWebhook(payload){
   if(!WEBHOOK_URL) return;
-  try{
-    await fetch(WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-  }catch(e){ console.warn('Webhook failed',e); }
+  try{ await fetch(WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); }
+  catch(e){ console.warn('Webhook failed',e); }
 }
 
-/* ========= Events ========= */
+/* ===== Events ===== */
 document.getElementById('calcBtn').addEventListener('click', refresh);
+['tStart','tEnd','miStart','miEnd'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', computeFromStartEnd);
+});
 document.getElementById('saveBtn').addEventListener('click', async ()=>{
   const res = refresh(); if(!res) return;
   const meter = document.getElementById('meter').value;
@@ -352,7 +338,7 @@ document.getElementById('exportBtn').addEventListener('click', exportCSV);
 });
 renderLog();
 
-// Register service worker when hosted (https/http), not for file://
+/* PWA */
 if (location.protocol.startsWith('http') && 'serviceWorker' in navigator) {
   window.addEventListener('load', ()=>{
     navigator.serviceWorker.register('sw.js').catch(console.warn);

@@ -12,11 +12,13 @@
   *,*::before,*::after{box-sizing:border-box}
   body{margin:16px;background:#f6f7f9;line-height:1.25;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif}
   h1{font-size:20px;margin:0 0 10px;text-align:left}
-  .card{background:#fff;border:1px solid #ddd;border-radius:14px;padding:14px;margin:12px auto;max-width:720px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .card{background:#fff;border:1px solid #ddd;border-radius:14px;padding:14px;margin:12px auto;max-width:900px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .row4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
   label{display:block;font-size:14px;margin:8px 0 4px}
   input,button{width:100%;font-size:16px;padding:12px;border-radius:12px;border:1px solid #cfcfcf;background:#fff;appearance:none}
+  input[readonly]{background:#f9fafb;color:#444}
   input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
   .btns{display:flex;flex-direction:column;gap:10px;margin-top:12px}
   .btn-green{background:#16a34a;border-color:#16a34a;color:#fff}
@@ -38,14 +40,33 @@
 <h1>CabWizz Fare Estimator <span class="pill mono" id="activeRatePill">Active: –</span></h1>
 
 <div class="card">
-  <div class="row">
+  <div class="row4">
     <div>
-      <label for="mins">Minutes</label>
-      <input id="mins" type="number" inputmode="numeric" step="1" min="0" placeholder="e.g. 20">
+      <label for="startTime">Start time</label>
+      <input id="startTime" type="time" step="60">
     </div>
     <div>
-      <label for="miles">Miles</label>
-      <input id="miles" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 5.0">
+      <label for="endTime">End time</label>
+      <input id="endTime" type="time" step="60">
+    </div>
+    <div>
+      <label for="startOdo">Start odometer (mi)</label>
+      <input id="startOdo" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 12456.7">
+    </div>
+    <div>
+      <label for="endOdo">End odometer (mi)</label>
+      <input id="endOdo" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 12461.9">
+    </div>
+  </div>
+
+  <div class="row2" style="margin-top:10px">
+    <div>
+      <label for="mins">Computed minutes</label>
+      <input id="mins" type="number" step="1" readonly placeholder="auto">
+    </div>
+    <div>
+      <label for="miles">Computed miles</label>
+      <input id="miles" type="number" step="0.1" readonly placeholder="auto">
     </div>
   </div>
 
@@ -54,9 +75,8 @@
     <input id="meter" type="number" inputmode="decimal" step="0.01" min="0" placeholder="e.g. 17.40">
   </div>
 
-  <!-- Reset Fields button (clears inputs only) -->
   <div class="btns" style="margin-top:10px">
-    <button class="btn-gray" id="resetFieldsBtn">Reset Fields (mins/miles/meter)</button>
+    <button class="btn-gray" id="resetFieldsBtn">Reset Fields (times/odo/meter)</button>
   </div>
 
   <div class="row3" style="margin-top:12px">
@@ -77,14 +97,18 @@
 
 <div class="card">
   <div class="muted">Saved Journeys</div>
-  <div style="max-height:45vh;overflow:auto;border:1px solid #eee;border-radius:10px;margin-top:6px">
+  <div style="max-height:52vh;overflow:auto;border:1px solid #eee;border-radius:10px;margin-top:6px">
     <table>
       <thead>
-        <tr><th>#</th><th>When</th><th>Min</th><th>Mi</th><th>Active</th>
-            <th>Rate 1 (core / range)</th>
-            <th>Rate 2 (core / range)</th>
-            <th>Rate 3 (core / range)</th>
-            <th>Meter</th></tr>
+        <tr>
+          <th>#</th><th>When</th><th>Start</th><th>End</th>
+          <th>Start mi</th><th>End mi</th><th>Min</th><th>Mi</th>
+          <th>Active</th>
+          <th>Rate 1 (core / range)</th>
+          <th>Rate 2 (core / range)</th>
+          <th>Rate 3 (core / range)</th>
+          <th>Meter</th>
+        </tr>
       </thead>
       <tbody id="logBody"></tbody>
     </table>
@@ -118,25 +142,19 @@ window.onerror = function(msg, src, line, col){
 };
 
 /* ===== Rate schedule (weekend + public holidays) =====
-   Weekdays (Mon–Thu):  R1 05:00–20:00, R2 20:00–22:00, R3 22:00–05:00
-   Friday:               R1 05:00–20:00, R2 20:00–22:00, R3 22:00–05:00 (→ Sat)
-   Saturday:             R2 05:00–22:00, R3 22:00–05:00 (→ Sun)
-   Sunday:               R1 05:00–17:00, R2 17:00–22:00, R3 22:00–05:00 (→ Mon)
-   Public Holidays:      R3 all day
+   Mon–Thu:  R1 05:00–20:00, R2 20:00–22:00, R3 22:00–05:00
+   Friday:    same as weekdays
+   Saturday:  R2 05:00–22:00, R3 22:00–05:00
+   Sunday:    R1 05:00–17:00, R2 17:00–22:00, R3 22:00–05:00
+   Public Holidays: R3 all day
 */
-const PUBLIC_HOLIDAYS = [
-  // "2025-12-25", "2025-12-26"  ← add dates as needed (YYYY-MM-DD)
-];
-function isPublicHoliday(d = new Date()){
-  const iso = d.toISOString().slice(0,10);
-  return PUBLIC_HOLIDAYS.includes(iso);
-}
+const PUBLIC_HOLIDAYS = [ /* "2025-12-25","2025-12-26" */ ];
+function isPublicHoliday(d=new Date()){ return PUBLIC_HOLIDAYS.includes(d.toISOString().slice(0,10)); }
 function parseHM(s){ const [h,m]=s.split(':').map(Number); return h*60+m; }
 function inWindow(t, start, end){ return start<end ? (t>=start && t<end) : (t>=start || t<end); }
 function activeRateName(date=new Date()){
   if (isPublicHoliday(date)) return 'Rate 3';
-  const dow = date.getDay(); // 0=Sun..6=Sat
-  const t   = date.getHours()*60 + date.getMinutes();
+  const dow=date.getDay(), t=date.getHours()*60+date.getMinutes();
   if (dow>=1 && dow<=4){ // Mon–Thu
     if (inWindow(t,parseHM('05:00'),parseHM('20:00'))) return 'Rate 1';
     if (inWindow(t,parseHM('20:00'),parseHM('22:00'))) return 'Rate 2';
@@ -262,6 +280,27 @@ function rangeAround(core, miles){
   };
 }
 
+/* ===== Compute minutes/miles from inputs ===== */
+function calcMinutes(){
+  const s=$('startTime').value, e=$('endTime').value;
+  if(!s || !e) return NaN;
+  // Use today; if end < start, treat as overnight +24h
+  const today=new Date(); const [sh,sm]=s.split(':').map(Number), [eh,em]=e.split(':').map(Number);
+  const ds=new Date(today.getFullYear(),today.getMonth(),today.getDate(),sh,sm,0);
+  let   de=new Date(today.getFullYear(),today.getMonth(),today.getDate(),eh,em,0);
+  if (de < ds) de = new Date(de.getTime() + 24*60*60*1000);
+  return Math.max(0, Math.round((de-ds)/60000));
+}
+function calcMiles(){
+  const a=parseFloat($('startOdo').value), b=parseFloat($('endOdo').value);
+  if(Number.isNaN(a) || Number.isNaN(b)) return NaN;
+  return Math.max(0, r2(b - a));
+}
+function updateComputedFields(){
+  const m = calcMinutes(); if(!Number.isNaN(m)) $('mins').value = m; else $('mins').value='';
+  const d = calcMiles();   if(!Number.isNaN(d)) $('miles').value = d; else $('miles').value='';
+}
+
 /* ===== Core calc (Rate 3 clamp) ===== */
 function estimate(rateKey, mins, miles){
   const r = cfg[rateKey];
@@ -271,7 +310,7 @@ function estimate(rateKey, mins, miles){
   const structural = cfg.base + mPart + perMile*miles; // base+time+miles
   let core = structural + sumOffsets(r.offsets, miles, mins);
   if(rateKey==='rate2') core = longTrim(core, r.longTrim, miles, mins);
-  if(rateKey==='rate3') core = Math.max(core, structural); // never below base+time+miles
+  if(rateKey==='rate3') core = Math.max(core, structural); // never below structure
 
   core = roundTo(core, cfg.inc);
   const {lower, upper} = rangeAround(core, miles);
@@ -292,9 +331,16 @@ function orderGuard(r1, r2, r3, miles){
 function fmtRange(core, lo, hi){ return `${£(core)}  (${£(lo)}–${£(hi)})`; }
 
 function refresh(now=new Date()){
+  // always recompute mins/miles from fields
+  updateComputedFields();
   const mins  = Number($('mins').value);
   const miles = Number($('miles').value);
-  if(Number.isNaN(mins) || Number.isNaN(miles)) return;
+  if(Number.isNaN(mins) || Number.isNaN(miles)){
+    // show dashed outputs if incomplete
+    $('r1').textContent='–'; $('r2').textContent='–'; $('r3').textContent='–';
+    document.getElementById('activeRatePill').textContent = 'Active: '+activeRateName(now);
+    return;
+  }
 
   let r1 = estimate('rate1', mins, miles);
   let r2 = estimate('rate2', mins, miles);
@@ -363,7 +409,14 @@ async function renderLog(){
   rows.forEach((r,i)=>{
     const tr=document.createElement('tr');
     const when = `${r.day.slice(0,3)} ${r.date} ${r.time}`;
-    tr.innerHTML=`<td>${i+1}</td><td class="mono">${when}</td><td>${r.mins}</td><td>${r.miles}</td>
+    tr.innerHTML=`<td>${i+1}</td>
+      <td class="mono">${when}</td>
+      <td>${r.startTime||''}</td>
+      <td>${r.endTime||''}</td>
+      <td>${r.startOdo??''}</td>
+      <td>${r.endOdo??''}</td>
+      <td>${r.mins}</td>
+      <td>${r.miles}</td>
       <td>${r.active}</td>
       <td class="mono">${cur(r.r1c)} (${cur(r.r1l)}–${cur(r.r1u)})</td>
       <td class="mono">${cur(r.r2c)} (${cur(r.r2l)}–${cur(r.r2u)})</td>
@@ -374,33 +427,53 @@ async function renderLog(){
 }
 async function exportCSV(){
   const rows=await loadLog();
-  const head=['Day','Date','Time','Minutes','Miles','ActiveRate','R1 core','R1 lower','R1 upper','R2 core','R2 lower','R2 upper','R3 core','R3 lower','R3 upper','Meter'];
+  const head=['Day','Date','Time','StartTime','EndTime','StartOdo','EndOdo','Minutes','Miles','ActiveRate','R1 core','R1 lower','R1 upper','R2 core','R2 lower','R2 upper','R3 core','R3 lower','R3 upper','Meter'];
   const cur=n=>n===''?'':`£${Number(n).toFixed(2)}`;
-  const csv=[head, ...rows.map(r=>[r.day,r.date,r.time,r.mins,r.miles,r.active,cur(r.r1c),cur(r.r1l),cur(r.r1u),cur(r.r2c),cur(r.r2l),cur(r.r2u),cur(r.r3c),cur(r.r3l),cur(r.r3u),cur(r.meter)])]
-    .map(a=>a.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\r\n');
+  const csv=[head, ...rows.map(r=>[
+    r.day,r.date,r.time,r.startTime||'',r.endTime||'',r.startOdo??'',r.endOdo??'',r.mins,r.miles,r.active,
+    cur(r.r1c),cur(r.r1l),cur(r.r1u),
+    cur(r.r2c),cur(r.r2l),cur(r.r2u),
+    cur(r.r3c),cur(r.r3l),cur(r.r3u),
+    cur(r.meter)
+  ])].map(a=>a.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\r\n');
   const blob=new Blob(['\uFEFF',csv],{type:'text/csv;charset=utf-8;'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='cabwizz_journeys.csv'; a.click(); URL.revokeObjectURL(a.href);
 }
 
 /* ===== Events ===== */
-$('calcBtn').addEventListener('click', ()=>{ const r=refresh(); if(!r) alert('Enter minutes and miles first'); });
+['startTime','endTime','startOdo','endOdo'].forEach(id=>$(id).addEventListener('input', ()=>refresh()));
+
+$('calcBtn').addEventListener('click', ()=>{ const r=refresh(); if(!r) alert('Enter start/end times and odometer values first'); });
+
 $('saveBtn').addEventListener('click', async ()=>{
   const res=refresh(); if(!res) return;
+  const mins = Number($('mins').value), miles = Number($('miles').value);
+  if(Number.isNaN(mins) || Number.isNaN(miles)){ alert('Please enter valid start/end times and odometer values.'); return; }
+
   const parts=stampParts();
-  const row={ day:parts.day,date:parts.date,time:parts.time, mins:res.mins,miles:res.miles, active:res.act,
+  const row={
+    day:parts.day,date:parts.date,time:parts.time,
+    startTime:$('startTime').value||'',
+    endTime:$('endTime').value||'',
+    startOdo:$('startOdo').value||'',
+    endOdo:$('endOdo').value||'',
+    mins:res.mins,miles:res.miles, active:res.act,
     r1c:res.r1.core,r1l:res.r1.lower,r1u:res.r1.upper,
     r2c:res.r2.core,r2l:res.r2.lower,r2u:res.r2.upper,
     r3c:res.r3.core,r3l:res.r3.lower,r3u:res.r3.upper,
-    meter:$('meter').value?Number($('meter').value):'' };
-  const rows=await loadLog(); rows.push(row); await saveLog(rows); $('meter').value='';
+    meter:$('meter').value?Number($('meter').value):''
+  };
+  const rows=await loadLog(); rows.push(row); await saveLog(rows);
+  $('meter').value=''; // leave times/odo so you can chain trips if you want
 });
+
 $('clearBtn').addEventListener('click', async ()=>{ if(confirm('Clear ALL saved journeys?')) await saveLog([]); });
 $('exportBtn').addEventListener('click', exportCSV);
+
 $('resetFieldsBtn').addEventListener('click', ()=>{
-  $('mins').value=''; $('miles').value=''; $('meter').value='';
+  ['startTime','endTime','startOdo','endOdo','mins','miles','meter'].forEach(id=>$(id).value='');
   $('r1').textContent='–'; $('r2').textContent='–'; $('r3').textContent='–';
 });
-['mins','miles'].forEach(id=>$(id).addEventListener('input', ()=>{ if($(id).value!=='') refresh(); }));
 
 renderLog();
 document.getElementById('activeRatePill').textContent = 'Active: '+activeRateName();

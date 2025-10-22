@@ -1,4 +1,4 @@
-const CACHE='cabwizz-cache-v11'; // bump so Safari/iOS fetches this build
+const CACHE='cabwizz-cache-v12';
 const ASSETS=['./','index.html','sw.js','manifest.webmanifest'];
 
 self.addEventListener('install',e=>{

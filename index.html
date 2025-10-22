@@ -18,26 +18,19 @@
   .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
   @media (max-width:420px){ .row,.row3{grid-template-columns:1fr} }
-
-  /* Time input alignment */
-  .timeRow input[type="time"]{
-    -webkit-appearance:none;appearance:none;text-align:center;
-    font-variant-numeric:tabular-nums;line-height:1;min-height:48px;
-  }
+  /* aligned time inputs */
+  .timeRow input[type="time"]{-webkit-appearance:none;appearance:none;text-align:center;font-variant-numeric:tabular-nums;line-height:1;min-height:48px}
   .timeRow .cell{display:flex;align-items:center}
   .timeRow .cell input{width:100%}
-
   .out{font-weight:700}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   .muted{color:#666}
-
   .btns{display:flex;flex-direction:column;gap:10px;margin-top:12px}
   .btn{border:none;color:#fff;font-weight:600;text-align:center;border-radius:16px;padding:14px;width:100%;
        box-shadow:0 1px 0 rgba(0,0,0,.08), inset 0 -1px 0 rgba(0,0,0,.08)}
   .ok{background:var(--ok)} .warn{background:var(--warn)} .info{background:var(--info)} .danger{background:var(--danger)}
   .btn.outline-danger{background:#fff;color:var(--danger);border:1px solid var(--danger);box-shadow:none}
   .btn.outline{background:#fff;color:#333;border:1px solid var(--stroke);box-shadow:none}
-
   table{width:100%;border-collapse:collapse;font-size:14px}
   th,td{border-bottom:1px solid #eee;padding:10px;text-align:left;vertical-align:top}
   th{background:#fafafa;position:sticky;top:0}
@@ -50,18 +43,14 @@
 <div class="card">
   <!-- Times -->
   <div class="row timeRow">
-    <div class="cell">
-      <div style="width:100%">
-        <label for="tStart">Start time</label>
-        <input id="tStart" type="time" step="60" />
-      </div>
-    </div>
-    <div class="cell">
-      <div style="width:100%">
-        <label for="tEnd">End time</label>
-        <input id="tEnd" type="time" step="60" />
-      </div>
-    </div>
+    <div class="cell"><div style="width:100%">
+      <label for="tStart">Start time</label>
+      <input id="tStart" type="time" step="60" />
+    </div></div>
+    <div class="cell"><div style="width:100%">
+      <label for="tEnd">End time</label>
+      <input id="tEnd" type="time" step="60" />
+    </div></div>
   </div>
 
   <!-- Mileages -->
@@ -110,7 +99,7 @@
     <button class="btn outline-danger" id="delPrevBtn">Delete Previous</button>
     <button class="btn danger" id="clearBtn">Clear Log</button>
   </div>
-  <div class="tiny">Add to Home Screen for offline use. Values auto-save while you type.</div>
+  <div class="tiny">Tip: add to Home Screen. Values auto-save while you type.</div>
 </div>
 
 <div class="card">
@@ -129,22 +118,18 @@
 </div>
 
 <script>
-/* ===== CONFIG ===== */
-/* Dynamic, asymmetric ranges: tight on mid trips, wider & upper-skewed on long/time-heavy */
+/* ===== CONFIG (core model kept; we'll shape ranges asymmetrically below) ===== */
 const cfg = {
   baseFare: 4.20,
   inc: 0.20,
-
-  /* base band (used then skewed by time/distance below) */
+  // Base range band magnitudes (we'll skew them in buildRange())
   rangeBands: [
-    { max: 1.5, lower:{fixed:0.40,pct:0.02}, upper:{fixed:0.90,pct:0.05} },
-    { max: 2.5, lower:{fixed:0.80,pct:0.03}, upper:{fixed:1.40,pct:0.05} },
-    { max: 4.5, lower:{fixed:1.20,pct:0.03}, upper:{fixed:1.80,pct:0.05} },
-    { max: 6.5, lower:{fixed:1.60,pct:0.03}, upper:{fixed:2.20,pct:0.05} },
-    { max: 1e9, lower:{fixed:2.00,pct:0.025}, upper:{fixed:2.60,pct:0.045} },
+    { max: 1.5, lower:{fixed:0.30,pct:0.02}, upper:{fixed:0.60,pct:0.05} },
+    { max: 2.5, lower:{fixed:0.60,pct:0.04}, upper:{fixed:1.00,pct:0.06} },
+    { max: 4.5, lower:{fixed:1.00,pct:0.04}, upper:{fixed:1.60,pct:0.06} },
+    { max: 6.5, lower:{fixed:1.60,pct:0.04}, upper:{fixed:2.00,pct:0.05} },
+    { max: 1e9, lower:{fixed:2.00,pct:0.02}, upper:{fixed:2.50,pct:0.04} },
   ],
-
-  /* === RATE 1 ===  */
   rate1:{
     perMinute:[{upTo:12,v:0.30},{upTo:25,v:0.34},{v:0.40}],
     perMileRules:[
@@ -155,19 +140,11 @@ const cfg = {
       {when:{mMax:6.0}, v:3.60},
       {v:4.29}
     ],
-    offsets:[
-      /* lift for 4.2–ish mi @ ~35 min where we were low */
-      {when:{mMin:3.8,mMax:5.0,tMin:30,tMax:45}, d: 2.00}
-    ],
-    /* softer trim threshold so very long is not flattened too much */
+    offsets:[],
     longTrim:{ enabled:true, when:{mMin:35,tMin:90}, pct:0.03, minAbs:2.00 }
   },
-
-  /* === RATE 2 === */
   rate2:{
-    perMinute:[
-      {upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.58}
-    ],
+    perMinute:[{upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.58}],
     perMileRules:[
       {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, v:3.75},
       {when:{mMin:18,mMax:25,tMin:55,tMax:70},  v:4.05},
@@ -180,32 +157,23 @@ const cfg = {
     offsets:[
       {when:{mMax:1.2,tMin:6,tMax:13}, d:0.80},
       {when:{mMin:1.8,mMax:2.2,tMin:10,tMax:20}, d:0.20},
-      /* lift where minutes are high for ~2–4.5 mi */
-      {when:{mMin:2.0,mMax:4.5,tMin:24,tMax:40}, d:1.20},
       {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, d:-1.80},
       {when:{mMin:18,mMax:21,tMin:45,tMax:60}, d:-1.50}
     ],
     longTrim:{ enabled:true, when:{mMin:25,tMin:65}, pct:0.05, minAbs:3.50 }
   },
-
-  /* === RATE 3 === */
   rate3:{
     perMinute:[{upTo:12,v:0.58},{upTo:30,v:0.62},{v:0.44}],
     perMileRules:[{v:4.00}],
     offsets:[
-      /* ultra-short hops slightly under — add a small floor boost */
-      {when:{mMax:0.6,tMax:3}, d:1.20},
-      {when:{mMax:0.8,tMax:5}, d:0.80},
-      /* time-heavy short trips (e.g. 1–2mi @ 25+min) */
-      {when:{mMax:2.2,tMin:25}, d:4.00},
-
+      {when:{mMax:0.5,tMax:5}, d:-1.20},
+      {when:{mMax:0.8,tMax:5}, d:-0.60},
       {when:{mMin:1.8,mMax:2.2,tMin:9,tMax:12}, d:-1.40},
       {when:{mMin:5.5,mMax:6.3,tMin:28,tMax:40}, d:-1.60},
       {when:{mMin:18,mMax:20,tMin:45,tMax:60}, d:1.50},
-
-      /* mid-long window softener kept */
-      {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, d:-3.20},
-      {when:{mMin:10,mMax:12,tMin:35,tMax:55}, d:-2.20}
+      // mid-band softeners to bring core closer to the (often accurate) lower bound you observed
+      {when:{mMin:4.0,mMax:5.6,tMin:15,tMax:35}, d:-0.80},
+      {when:{mMin:6.5,mMax:8.0,tMin:22,tMax:40}, d:-1.20}
     ]
   }
 };
@@ -220,8 +188,8 @@ const $ = (id)=>document.getElementById(id);
 /* ===== State persistence for inputs ===== */
 const FORM_KEY='cabwizz_form_v1';
 const FORM_IDS=['tStart','tEnd','miStart','miEnd','mins','miles','meter'];
-function saveForm(){ const obj={}; FORM_IDS.forEach(id=>obj[id]=$(id).value??''); localStorage.setItem(FORM_KEY, JSON.stringify(obj)); }
-function loadForm(){ try{ const raw=localStorage.getItem(FORM_KEY); if(!raw) return; const obj=JSON.parse(raw); FORM_IDS.forEach(id=>{ if(obj[id]!==undefined) $(id).value=obj[id]; }); }catch(e){} }
+function saveForm(){ const o={}; FORM_IDS.forEach(id=>o[id]=$(id).value??''); localStorage.setItem(FORM_KEY, JSON.stringify(o)); }
+function loadForm(){ try{ const raw=localStorage.getItem(FORM_KEY); if(!raw) return; const o=JSON.parse(raw); FORM_IDS.forEach(id=>{ if(o[id]!==undefined) $(id).value=o[id]; }); }catch(e){} }
 function clearForm(){ FORM_IDS.forEach(id=>$(id).value=''); saveForm(); }
 
 /* ===== Rule helpers ===== */
@@ -248,7 +216,7 @@ function minutePart(tiers, mins){
   return sum;
 }
 function sumOffsets(arr, miles, mins){
-  return (arr||[]).reduce((s,o)=>s+(matches(o.when,miles,mins)?o.d:0),0);
+  return arr.reduce((s,o)=>s+(matches(o.when,miles,mins)?o.d:0),0);
 }
 function longTrim(core, trim, miles, mins){
   if(!trim||!trim.enabled) return core;
@@ -258,38 +226,50 @@ function longTrim(core, trim, miles, mins){
   return roundTo(rounded - dec, cfg.inc);
 }
 
-/* ===== Asymmetric range builder (skews upper on long/time-heavy) ===== */
-function rangeAround(core, miles, mins){
-  const b = cfg.rangeBands.find(x=>miles<=x.max) || cfg.rangeBands[cfg.rangeBands.length-1];
+/* ===== Asymmetric, context-aware range builder ===== */
+function baseBand(miles){
+  return cfg.rangeBands.find(x=>miles<=x.max) || cfg.rangeBands[cfg.rangeBands.length-1];
+}
+function buildRange(core, miles, mins, rateKey){
+  const b = baseBand(miles);
+  // start with base adj
   let lowerAdj = Math.max(b.lower.fixed, core*b.lower.pct);
   let upperAdj = Math.max(b.upper.fixed, core*b.upper.pct);
 
-  // Tight mid trips (3–7 mi & 20–40 min): ~±£2 target
-  if (miles>=3 && miles<=7 && mins>=20 && mins<=40){
-    lowerAdj = Math.max(lowerAdj, 1.6);
-    upperAdj = Math.max(upperAdj, 2.2);
+  // 3–5 miles: raise U, tighten L (per your observations)
+  if(miles>=3 && miles<=5){
+    lowerAdj = Math.max(lowerAdj*0.75, 1.00);   // bring lower closer to core
+    upperAdj = Math.max(upperAdj*1.30, 2.40);   // give more headroom
   }
 
-  // Time-heavy short trips (<=2.5 mi & >=25 min): boost upper
-  if (miles<=2.5 && mins>=25){
-    upperAdj += 2.0;
-    lowerAdj = Math.max(lowerAdj, 0.8);
+  // time-heavy short trips (<=2.5 mi but >15 min): widen both, upper a bit more
+  if(miles<=2.5 && mins>=15){
+    lowerAdj = Math.max(lowerAdj*1.05, lowerAdj+0.40);
+    upperAdj = Math.max(upperAdj*1.20, upperAdj+0.80);
   }
 
-  // Long-ish / slow (>=8 mi or >=45 min): add 1% to upper
-  if (miles>=8 || mins>=45){
-    upperAdj = Math.max(upperAdj, core*0.04) + core*0.01;
-    lowerAdj = Math.max(lowerAdj, 1.8);
+  // longish & slow (>=6 mi and >=35 min): add a touch on the upper
+  if(miles>=6 && mins>=35){
+    upperAdj = Math.max(upperAdj*1.12, upperAdj+0.80);
   }
 
-  // Very long (>=20 mi or >=55 min): upper ≈ 5% (min +5), lower floor ~£2
-  if (miles>=20 || mins>=55){
-    upperAdj = Math.max(upperAdj, core*0.05, 5.0);
-    lowerAdj = Math.max(lowerAdj, 2.0);
+  // Rate 3: you said lower felt like the meter; push core nearer lower,
+  // and trim the upper slightly so the band isn't too tall.
+  if(rateKey==='rate3'){
+    lowerAdj = Math.max(lowerAdj*1.10, lowerAdj+0.30); // a little more below core
+    upperAdj = Math.max(upperAdj*0.92, upperAdj-0.30); // small trim
   }
 
-  const lower = floorTo(roundTo(core - lowerAdj, cfg.inc), cfg.inc);
-  const upper = ceilTo (roundTo(core + upperAdj, cfg.inc), cfg.inc);
+  // Build raw bounds
+  let lower = floorTo(roundTo(core - lowerAdj, cfg.inc), cfg.inc);
+  let upper = ceilTo (roundTo(core + upperAdj, cfg.inc), cfg.inc);
+
+  // Guarantee sensible minimum gaps by distance (so we don't clip actuals)
+  const minUpperGap = (miles>=10? 4.0 : miles>=6? 3.0 : 2.0);
+  const minLowerGap = (miles>=3 && miles<=5? 1.0 : 1.2); // closer lower in 3–5 mi window
+  if(upper < core + minUpperGap) upper = roundTo(core + minUpperGap, cfg.inc);
+  if(lower > core - minLowerGap) lower = roundTo(core - minLowerGap, cfg.inc);
+
   return {lower, upper};
 }
 
@@ -321,51 +301,39 @@ function estimate(rateKey, mins, miles){
   const r = cfg[rateKey];
   const mPart = minutePart(r.perMinute, mins);
   const perMile = pickPerMile(r.perMileRules, miles, mins);
-  let core = cfg.baseFare + mPart + perMile*miles + sumOffsets(r.offsets, miles, mins);
+  let core = cfg.baseFare + mPart + perMile*miles + sumOffsets(r.offsets||[], miles, mins);
   if(r.longTrim) core = longTrim(core, r.longTrim, miles, mins);
   core = roundTo(core, cfg.inc);
-  const rng = rangeAround(core, miles, mins);
+  const rng = buildRange(core, miles, mins, rateKey);
   return { core, lower:rng.lower, upper:rng.upper };
 }
 
-/* ===== Rate rules (based on START time & weekday) ===== */
-function rateLabelAtMinutes(day, m){
-  const R1='Rate 1', R2='Rate 2', R3='Rate 3';
-  const inRange = (a,b)=> (m>=a && m<b);
-  if(day>=1 && day<=5){          // Mon–Fri
-    if(inRange(300,1200)) return R1;      // 05:00–20:00
-    if(inRange(1200,1320)) return R2;     // 20:00–22:00
-    return R3;                             // 22:00–05:00
+/* ===== Rate Now & Cross-over detection (based on START & END) ===== */
+function rateNowLabelFor(startMinutes, weekday){ // weekday: 0=Sun..6=Sat
+  const m = startMinutes; if(m==null) return 'Rate 1';
+  const inR=(a,b)=> (m>=a && m<b); const R1='Rate 1',R2='Rate 2',R3='Rate 3';
+  if(weekday>=1 && weekday<=5){ // Mon–Fri
+    if(inR(300,1200)) return R1; if(inR(1200,1320)) return R2; return R3;
   }
-  if(day===6){                   // Sat
-    if(inRange(300,1320)) return R2;      // 05:00–22:00
-    return R3;                             // 22:00–05:00
-  }
-  if(day===0){                   // Sun
-    if(inRange(300,1320)) return R2;      // 05:00–22:00
-    return R3;                             // 22:00–05:00
-  }
+  if(weekday===6){ if(inR(300,1320)) return R2; return R3; } // Sat
+  if(weekday===0){ if(inR(300,1320)) return R2; return R3; } // Sun
   return R1;
 }
-function rateNowLabelFor(startMinutes, jsDate){
-  const day = jsDate.getDay();
-  if(startMinutes==null) return 'Rate 1';
-  return rateLabelAtMinutes(day, startMinutes);
-}
-function rateAtEndLabelFor(endMinutes, jsDate){
-  // end time may roll to next day
-  const endNext = endMinutes!=null && parseTimeToMinutes($('tStart').value)!=null &&
-                  endMinutes < parseTimeToMinutes($('tStart').value);
-  const d = new Date(jsDate);
-  if(endNext) d.setDate(d.getDate()+1);
-  const day = d.getDay();
-  if(endMinutes==null) return 'Rate 1';
-  return rateLabelAtMinutes(day, endMinutes);
+function endRateLabelFor(startMin,endMin,weekday){
+  // If end crosses midnight, weekday shifts
+  let endWeekday = weekday;
+  if(endMin<startMin) endWeekday = (weekday+1)%7;
+  return rateNowLabelFor(endMin, endWeekday);
 }
 
 /* ===== UI helpers ===== */
 function fmt(x){ return '£'+r2(x).toFixed(2); }
 function fmtRange(core,lo,hi){ return `${fmt(core)}  (${fmt(lo)}–${fmt(hi)})`; }
+function weekdayStamp(d=new Date()){
+  const wk=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+  const pad=n=>String(n).padStart(2,'0');
+  return `${wk} ${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 /* ===== Calculate & render ===== */
 function refresh(){
@@ -385,7 +353,7 @@ function refresh(){
   return {mins, miles, r1, r2, r3};
 }
 
-/* ===== Logging (table) ===== */
+/* ===== Logging (table stays as before for on-screen QA) ===== */
 const KEY='cabwizz_log_v1';
 function loadLog(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ return [] } }
 function saveLog(rows){ localStorage.setItem(KEY, JSON.stringify(rows)); renderLog(); }
@@ -402,20 +370,14 @@ function renderLog(){
     body.appendChild(tr);
   });
 }
-function weekdayStamp(d=new Date()){
-  const wk=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
-  const pad=n=>String(n).padStart(2,'0');
-  return `${wk} ${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
 
-/* ===== CSV Export (applicable rate + start/end + crossing tag) ===== */
+/* ===== CSV Export (ONLY applicable rate + timing info + crossover flag) ===== */
 function exportCSV(){
   const rows = loadLog();
-  const head = ['When','Start','End','Minutes','Miles','Core/Range','Meter','Rate Now','Start Rate','End Rate','Crossed Rates?'];
-  const csv = [head].concat(rows.map((r)=>[
-    r.when, r.start || '', r.end || '', r.mins, r.miles,
-    r.coreRangeForRate || '', r.meter || '', r.rateNow || '',
-    r.startRate || '', r.endRate || '', r.crossed || ''
+  const head = ['When','Minutes','Miles','Core/Range','Meter','Rate Now','Crossed?','Start','End','End Rate'];
+  const csv = [head].concat(rows.map(r=>[
+    r.when, r.mins, r.miles, r.coreRangeForRate||'', r.meter||'', r.rateNow||'',
+    r.crossed?'Yes':'No', r.start||'', r.end||'', r.endRate||''
   ])).map(arr=>arr.map(v=>{
     const s=String(v).replaceAll('"','""'); return `"${s}"`;
   }).join(',')).join('\r\n');
@@ -435,8 +397,7 @@ async function sendWebhook(payload){
 
 /* ===== Events ===== */
 window.addEventListener('load', ()=>{
-  loadForm();
-  computeFromStartEnd();
+  loadForm(); computeFromStartEnd();
 });
 document.getElementById('calcBtn').addEventListener('click', refresh);
 ['tStart','tEnd','miStart','miEnd','mins','miles','meter'].forEach(id=>{
@@ -452,43 +413,36 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
   const res = refresh(); if(!res) return;
 
   const now = new Date();
-  const startStr = $('tStart').value || '';
-  const endStr   = $('tEnd').value   || '';
+  const whenStr = weekdayStamp(now);
+  const tStartStr = $('tStart').value || '';
+  const tEndStr   = $('tEnd').value   || '';
+  const startMin = parseTimeToMinutes(tStartStr);
+  const endMin   = parseTimeToMinutes(tEndStr);
+  const weekday  = now.getDay();
 
-  const tStartMin = parseTimeToMinutes(startStr);
-  const tEndMin   = parseTimeToMinutes(endStr);
+  const rateNow = rateNowLabelFor(startMin, weekday);
+  const endRate = (endMin!=null && startMin!=null) ? endRateLabelFor(startMin, endMin, weekday) : rateNow;
+  const crossed = (endRate !== rateNow);
 
-  const rateNow = rateNowLabelFor(tStartMin, now);
-  const endRate = rateAtEndLabelFor(tEndMin, now);
-  const crossed = (rateNow !== endRate) ? 'Yes' : 'No';
-
-  // Pick applicable rate’s core/range
-  let chosen;
-  if(rateNow==='Rate 1') chosen = res.r1;
-  else if(rateNow==='Rate 2') chosen = res.r2;
-  else chosen = res.r3;
-
+  // choose rate object
+  const chosen = rateNow==='Rate 1' ? res.r1 : rateNow==='Rate 2' ? res.r2 : res.r3;
   const coreRangeForRate = `${fmt(chosen.core)} (${fmt(chosen.lower)}–${fmt(chosen.upper)})`;
 
-  const meter = document.getElementById('meter').value;
+  const meter = $('meter').value;
+
   const row = {
-    when: weekdayStamp(now),
-    start: startStr, end: endStr,
+    when: whenStr,
     mins: res.mins, miles: res.miles,
     r1: fmtRange(res.r1.core,res.r1.lower,res.r1.upper),
     r2: fmtRange(res.r2.core,res.r2.lower,res.r2.upper),
     r3: fmtRange(res.r3.core,res.r3.lower,res.r3.upper),
     meter: meter? Number(meter).toFixed(2):'',
-    rateNow,
-    startRate: rateNow,
-    endRate,
-    crossed,
-    coreRangeForRate
+    // CSV fields
+    rateNow, coreRangeForRate, crossed, start: tStartStr, end: tEndStr, endRate
   };
   const rows = loadLog(); rows.push(row); saveLog(rows);
   await sendWebhook(row);
-  document.getElementById('meter').value='';
-  saveForm();
+  $('meter').value=''; saveForm();
 });
 document.getElementById('delPrevBtn').addEventListener('click', ()=>{
   const rows = loadLog();

@@ -116,12 +116,12 @@
 </div>
 
 <script>
-/* ========= CONFIG (tuned per feedback) ========= */
+/* ========= CONFIG ========= */
 const cfg = {
   baseFare: 4.20,
   inc: 0.20,
 
-  // Base bands (we reshape per context in buildRange)
+  // Base bands used by range builder
   rangeBands: [
     { max: 1.5, lower:{fixed:0.30,pct:0.02}, upper:{fixed:0.60,pct:0.05} },
     { max: 2.5, lower:{fixed:0.60,pct:0.04}, upper:{fixed:1.00,pct:0.06} },
@@ -130,29 +130,25 @@ const cfg = {
     { max: 1e9, lower:{fixed:2.00,pct:0.02}, upper:{fixed:2.50,pct:0.04} },
   ],
 
-  /* --- Rate 1 --- */
+  /* --- Rate 1 (as previously tuned and confirmed) --- */
   rate1:{
-    // small time uplift helps 20–36 min cases
     perMinute:[{upTo:12,v:0.30},{upTo:25,v:0.36},{v:0.40}],
-    // lift 3.5–4.5 mi @ 16–30 min slightly
     perMileRules:[
-      {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:3.65}, // was 3.35
+      {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:3.65},
       {when:{mMin:25}, v:3.80},
       {when:{mMin:15}, v:3.95},
       {when:{mMin:7},  v:4.05},
       {when:{mMax:6.0}, v:3.60},
       {v:4.29}
     ],
-    // add a simple, clear boost for the tricky 3–5 mi, ~18–40 min window
     offsets:[
       {when:{mMin:3.0,mMax:5.0,tMin:18,tMax:40}, d:1.20}
     ],
     longTrim:{ enabled:true, when:{mMin:35,tMin:90}, pct:0.03, minAbs:2.00 }
   },
 
-  /* --- Rate 2 --- */
+  /* --- Rate 2 (kept from last good build incl. short-hop tightening) --- */
   rate2:{
-    // keep top-tier at 0.60 so 50m/7.5mi hits ~£60
     perMinute:[{upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.60}],
     perMileRules:[
       {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, v:3.85},
@@ -163,9 +159,8 @@ const cfg = {
       {when:{mMin:1.8,mMax:2.2,tMin:10,tMax:20}, v:3.65},
       {v:4.29}
     ],
-    // lift core for 12–20 min & 1.5–2.8 mi (your 15m/1.7mi case)
     offsets:[
-      {when:{mMax:1.0}, d:0.00}, // no weird boosts on sub-1mi
+      {when:{mMax:1.0}, d:0.00},
       {when:{mMin:1.5,mMax:2.8,tMin:12,tMax:20}, d:1.60},
       {when:{mMax:1.2,tMin:6,tMax:13}, d:0.40},
       {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, d:-1.20},
@@ -174,13 +169,16 @@ const cfg = {
     longTrim:{ enabled:true, when:{mMin:25,tMin:65}, pct:0.05, minAbs:3.50 }
   },
 
-  /* --- Rate 3 --- */
+  /* --- Rate 3 (NEW: 3–7 mi band + time uplift + tighter ranges) --- */
   rate3:{
     perMinute:[{upTo:12,v:0.58},{upTo:30,v:0.62},{v:0.44}],
-    perMileRules:[{v:4.00}],
-    // mid-bands softened so core sits nearer previous lower
+    perMileRules:[
+      {when:{mMin:5.0,mMax:7.0,tMin:12,tMax:30}, v:3.50}, // upper half of band
+      {when:{mMin:3.0,mMax:5.0,tMin:12,tMax:30}, v:3.40}, // lower half of band
+      {v:4.00} // fallback for outside band
+    ],
     offsets:[
-      {when:{mMax:0.5,tMax:5}, d:-0.60}, // was -1.20 (keeps very short jobs realistic)
+      {when:{mMax:0.5,tMax:5}, d:-0.60},
       {when:{mMax:0.8,tMax:5}, d:-0.40},
       {when:{mMin:1.8,mMax:2.2,tMin:9,tMax:12}, d:-1.20},
       {when:{mMin:5.5,mMax:6.3,tMin:28,tMax:40}, d:-1.40},
@@ -239,7 +237,7 @@ function longTrim(core, trim, miles, mins){
   return roundTo(rounded - dec, cfg.inc);
 }
 
-/* ========= Asymmetric range builder (tuned) ========= */
+/* ========= Asymmetric range builder ========= */
 function baseBand(miles){
   return cfg.rangeBands.find(x=>miles<=x.max) || cfg.rangeBands[cfg.rangeBands.length-1];
 }
@@ -248,10 +246,13 @@ function buildRange(core, miles, mins, rateKey){
   let lowerAdj = Math.max(b.lower.fixed, core*b.lower.pct);
   let upperAdj = Math.max(b.upper.fixed, core*b.upper.pct);
 
-  // Rate 1: 3–5 mi → raise both ends (you asked for more headroom + higher floor)
-  if(rateKey==='rate1' && miles>=3 && miles<=5){
-    lowerAdj = Math.max(lowerAdj*0.95, 0.90);
-    upperAdj = Math.max(upperAdj*1.45, 2.80);
+  // Rate 3, 3–7 mi: tighter band; longer trips get more upper room
+  if (rateKey==='rate3' && miles>=3.0 && miles<=7.0){
+    lowerAdj = Math.max(lowerAdj*0.85, 0.80);
+    upperAdj = Math.max(upperAdj*0.95, 1.80);
+    if (mins>30){
+      upperAdj = Math.max(upperAdj*1.10, 2.60);
+    }
   }
 
   // Very short (≤1.0 mi): keep tight & sensible
@@ -260,7 +261,7 @@ function buildRange(core, miles, mins, rateKey){
     upperAdj = Math.min(Math.max(upperAdj, 1.20), 1.80);
   }
 
-  // Short but time-heavy (≤2.5 mi & ≥15 min): widen a bit; upper more than lower
+  // Short but time-heavy (≤2.5 mi & ≥15 min): widen a bit; upper > lower
   if(miles<=2.5 && mins>=15){
     lowerAdj = Math.max(lowerAdj*1.05, lowerAdj+0.30);
     upperAdj = Math.max(upperAdj*1.20, upperAdj+0.80);
@@ -271,37 +272,23 @@ function buildRange(core, miles, mins, rateKey){
     upperAdj = Math.max(upperAdj*1.12, upperAdj+0.80);
   }
 
-  // Rate 3: very short — clamp lower near realistic; narrow band
-  if(rateKey==='rate3' && miles<=1.0){
-    // Lower near core but not under ~£6.20
-    lowerAdj = Math.min(lowerAdj, Math.max(core - 6.20, 0.60)); // ensures lower ≳ 6.20
-    upperAdj = Math.min(upperAdj, 1.60);
-  }
-  // Rate 3 mid band (3.5–4.9 mi, ~15–25 min): gently narrower both sides
-  if(rateKey==='rate3' && miles>=3.5 && miles<5.0 && mins>=15 && mins<=25){
-    lowerAdj = lowerAdj*0.95;
-    upperAdj = upperAdj*0.92;
-  }
-
   // Build bounds
   let lower = floorTo(roundTo(core - lowerAdj, cfg.inc), cfg.inc);
   let upper = ceilTo (roundTo(core + upperAdj, cfg.inc), cfg.inc);
 
-  // General guards to avoid clipping meters
-  const minUpperGap = (miles>=10? 4.0 : miles>=6? 3.0 : 2.0);
-  const minLowerGap = (rateKey==='rate1' && miles>=3 && miles<=5? 1.0 : 1.2);
+  // Minimum gaps
+  let minUpperGap = (miles>=10? 4.0 : miles>=6? 3.0 : 2.0);
+  let minLowerGap = 1.2;
+  if (rateKey==='rate3' && miles>=3.0 && miles<=7.0){
+    minLowerGap = 1.0;
+    minUpperGap = mins>30 ? 2.6 : 1.8;
+  }
   if(upper < core + minUpperGap) upper = roundTo(core + minUpperGap, cfg.inc);
   if(lower > core - minLowerGap) lower = roundTo(core - minLowerGap, cfg.inc);
 
-  // Extra clamps for Rate 2 sub-1mi (you asked to avoid crazy lows & wide bands)
-  if(rateKey==='rate2' && miles<=1.0){
-    lower = Math.max(lower, roundTo(core - 0.60, cfg.inc));
-    upper = Math.min(upper, roundTo(core + 1.60, cfg.inc));
-  }
-
-  // Final sanity for absolute floor on tiny trips (respect base fare realism)
+  // Absolute floor for tiny trips
   if(miles<=0.8){
-    const absFloor = 6.20; // you flagged sub-£6 lower as unrealistic
+    const absFloor = 6.20;
     if(lower < absFloor) lower = roundTo(absFloor, cfg.inc);
   }
 
@@ -337,6 +324,13 @@ function estimate(rateKey, mins, miles){
   const mPart = minutePart(r.perMinute, mins);
   const perMile = pickPerMile(r.perMileRules, miles, mins);
   let core = cfg.baseFare + mPart + perMile*miles + sumOffsets(r.offsets||[], miles, mins);
+
+  // Rate 3 uplift for long, slow in 3–7 mi band (you validated this need)
+  if (rateKey==='rate3' && miles>=3 && miles<=7 && mins>30){
+    const extra = 0.25 * (mins - 30);
+    core += extra;
+  }
+
   if(r.longTrim) core = longTrim(core, r.longTrim, miles, mins);
   core = roundTo(core, cfg.inc);
   const rng = buildRange(core, miles, mins, rateKey);
@@ -468,7 +462,6 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
     r2: fmtRange(res.r2.core,res.r2.lower,res.r2.upper),
     r3: fmtRange(res.r3.core,res.r3.lower,res.r3.upper),
     meter: meter? Number(meter).toFixed(2):'',
-    // CSV fields
     rateNow, coreRangeForRate, crossed, start: tStartStr, end: tEndStr, endRate
   };
   const rows = loadLog(); rows.push(row); saveLog(rows);

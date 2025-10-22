@@ -121,7 +121,7 @@ const cfg = {
   baseFare: 4.20,
   inc: 0.20,
 
-  // Base bands used by range builder
+  // Base bands used by range builder (kept)
   rangeBands: [
     { max: 1.5, lower:{fixed:0.30,pct:0.02}, upper:{fixed:0.60,pct:0.05} },
     { max: 2.5, lower:{fixed:0.60,pct:0.04}, upper:{fixed:1.00,pct:0.06} },
@@ -130,11 +130,15 @@ const cfg = {
     { max: 1e9, lower:{fixed:2.00,pct:0.02}, upper:{fixed:2.50,pct:0.04} },
   ],
 
-  /* --- Rate 1 (as previously tuned and confirmed) --- */
+  /* --- Rate 1 (NEW lift for 4.0–4.8 mi band) --- */
   rate1:{
     perMinute:[{upTo:12,v:0.30},{upTo:25,v:0.36},{v:0.40}],
     perMileRules:[
-      {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:3.65},
+      // new targeted lifts so 36m/4.2mi lands ~£35
+      {when:{mMin:4.0,mMax:4.8,tMin:31,tMax:45}, v:4.30},
+      {when:{mMin:4.0,mMax:4.8,tMin:16,tMax:30}, v:3.85},
+
+      {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:3.65}, // original helper
       {when:{mMin:25}, v:3.80},
       {when:{mMin:15}, v:3.95},
       {when:{mMin:7},  v:4.05},
@@ -147,10 +151,18 @@ const cfg = {
     longTrim:{ enabled:true, when:{mMin:35,tMin:90}, pct:0.03, minAbs:2.00 }
   },
 
-  /* --- Rate 2 (kept from last good build incl. short-hop tightening) --- */
+  /* --- Rate 2 (targeted fixes for 3.8–4.6 mi @ 16–40 min) --- */
   rate2:{
     perMinute:[{upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.60}],
     perMileRules:[
+      // NEW targeted lifts (inserted before originals)
+      {when:{mMin:4.1,mMax:4.6,tMin:16,tMax:19}, v:4.75},  // 18m/4.5mi → ~£31.8
+      {when:{mMin:3.90,mMax:4.05,tMin:20,tMax:22}, v:4.55},// 21m/4.0mi → ~£29.0
+      {when:{mMin:3.80,mMax:4.10,tMin:23,tMax:26}, v:4.70},// 24m/3.9mi → ~£31.2
+      {when:{mMin:4.20,mMax:4.50,tMin:20,tMax:26}, v:5.35},// 21m/4.3mi → ~£34.6
+      {when:{mMin:4.20,mMax:4.50,tMin:27,tMax:40}, v:5.15},// 30m/4.5mi → ~£39.4
+
+      // existing rules kept
       {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, v:3.85},
       {when:{mMin:18,mMax:25,tMin:55,tMax:70},  v:4.08},
       {when:{mMin:25}, v:4.12},
@@ -169,13 +181,14 @@ const cfg = {
     longTrim:{ enabled:true, when:{mMin:25,tMin:65}, pct:0.05, minAbs:3.50 }
   },
 
-  /* --- Rate 3 (NEW: 3–7 mi band + time uplift + tighter ranges) --- */
+  /* --- Rate 3 (as agreed) --- */
   rate3:{
     perMinute:[{upTo:12,v:0.58},{upTo:30,v:0.62},{v:0.44}],
     perMileRules:[
-      {when:{mMin:5.0,mMax:7.0,tMin:12,tMax:30}, v:3.50}, // upper half of band
-      {when:{mMin:3.0,mMax:5.0,tMin:12,tMax:30}, v:3.40}, // lower half of band
-      {v:4.00} // fallback for outside band
+      {when:{mMin:4.0,mMax:5.0,tMin:12,tMax:30}, v:3.55}, // lifted 4.0–5.0
+      {when:{mMin:5.0,mMax:7.0,tMin:12,tMax:30}, v:3.50}, // slight ↑
+      {when:{mMin:3.0,mMax:4.0,tMin:12,tMax:30}, v:3.40}, // keep
+      {v:4.00}
     ],
     offsets:[
       {when:{mMax:0.5,tMax:5}, d:-0.60},
@@ -237,7 +250,7 @@ function longTrim(core, trim, miles, mins){
   return roundTo(rounded - dec, cfg.inc);
 }
 
-/* ========= Asymmetric range builder ========= */
+/* ========= Range builder (with R3 tightening) ========= */
 function baseBand(miles){
   return cfg.rangeBands.find(x=>miles<=x.max) || cfg.rangeBands[cfg.rangeBands.length-1];
 }
@@ -261,7 +274,7 @@ function buildRange(core, miles, mins, rateKey){
     upperAdj = Math.min(Math.max(upperAdj, 1.20), 1.80);
   }
 
-  // Short but time-heavy (≤2.5 mi & ≥15 min): widen a bit; upper > lower
+  // Short but time-heavy (≤2.5 mi & ≥15 min): widen a bit
   if(miles<=2.5 && mins>=15){
     lowerAdj = Math.max(lowerAdj*1.05, lowerAdj+0.30);
     upperAdj = Math.max(upperAdj*1.20, upperAdj+0.80);
@@ -325,9 +338,10 @@ function estimate(rateKey, mins, miles){
   const perMile = pickPerMile(r.perMileRules, miles, mins);
   let core = cfg.baseFare + mPart + perMile*miles + sumOffsets(r.offsets||[], miles, mins);
 
-  // Rate 3 uplift for long, slow in 3–7 mi band (you validated this need)
+  // Rate 3: minutes > 30 in 3–7 mi get gentle uplift that scales with miles
   if (rateKey==='rate3' && miles>=3 && miles<=7 && mins>30){
-    const extra = 0.25 * (mins - 30);
+    const k = 0.20 + 0.015*miles; // ≈£0.26–0.30 per extra min
+    const extra = roundTo(k * (mins - 30), cfg.inc);
     core += extra;
   }
 

@@ -13,24 +13,28 @@
   h1{font-size:18px;margin:0 0 8px}
   .card{border:1px solid #e5e5ea;border-radius:16px;padding:14px;margin:10px 0;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.04)}
   label{display:block;font-size:14px;margin:10px 0 6px;color:#333}
-  input,select,button{font-size:16px;padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);width:100%;background:#fff}
+  input,button{font-size:16px;padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);width:100%;background:#fff}
   input::placeholder{color:#b0b0b5}
   .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
   @media (max-width:420px){ .row,.row3{grid-template-columns:1fr} }
-  /* aligned time inputs */
-  .timeRow input[type="time"]{-webkit-appearance:none;appearance:none;text-align:center;font-variant-numeric:tabular-nums;line-height:1;min-height:48px}
+
+  .timeRow input[type="time"]{-webkit-appearance:none;appearance:none;text-align:center;
+    font-variant-numeric:tabular-nums;line-height:1;min-height:48px}
   .timeRow .cell{display:flex;align-items:center}
   .timeRow .cell input{width:100%}
+
   .out{font-weight:700}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   .muted{color:#666}
+
   .btns{display:flex;flex-direction:column;gap:10px;margin-top:12px}
   .btn{border:none;color:#fff;font-weight:600;text-align:center;border-radius:16px;padding:14px;width:100%;
        box-shadow:0 1px 0 rgba(0,0,0,.08), inset 0 -1px 0 rgba(0,0,0,.08)}
   .ok{background:var(--ok)} .warn{background:var(--warn)} .info{background:var(--info)} .danger{background:var(--danger)}
   .btn.outline-danger{background:#fff;color:var(--danger);border:1px solid var(--danger);box-shadow:none}
   .btn.outline{background:#fff;color:#333;border:1px solid var(--stroke);box-shadow:none}
+
   table{width:100%;border-collapse:collapse;font-size:14px}
   th,td{border-bottom:1px solid #eee;padding:10px;text-align:left;vertical-align:top}
   th{background:#fafafa;position:sticky;top:0}
@@ -99,7 +103,7 @@
     <button class="btn outline-danger" id="delPrevBtn">Delete Previous</button>
     <button class="btn danger" id="clearBtn">Clear Log</button>
   </div>
-  <div class="tiny">Tip: add to Home Screen. Values auto-save while you type.</div>
+  <div class="tiny">Add to Home Screen for offline. Inputs auto-save.</div>
 </div>
 
 <div class="card">
@@ -118,11 +122,12 @@
 </div>
 
 <script>
-/* ===== CONFIG (core model kept; we'll shape ranges asymmetrically below) ===== */
+/* ========= CONFIG (tuned per our discussion) ========= */
 const cfg = {
   baseFare: 4.20,
   inc: 0.20,
-  // Base range band magnitudes (we'll skew them in buildRange())
+
+  // Base band sizes (we reshape them in buildRange)
   rangeBands: [
     { max: 1.5, lower:{fixed:0.30,pct:0.02}, upper:{fixed:0.60,pct:0.05} },
     { max: 2.5, lower:{fixed:0.60,pct:0.04}, upper:{fixed:1.00,pct:0.06} },
@@ -130,6 +135,8 @@ const cfg = {
     { max: 6.5, lower:{fixed:1.60,pct:0.04}, upper:{fixed:2.00,pct:0.05} },
     { max: 1e9, lower:{fixed:2.00,pct:0.02}, upper:{fixed:2.50,pct:0.04} },
   ],
+
+  // Rate 1: mid stays steady; long slight uplift preserved
   rate1:{
     perMinute:[{upTo:12,v:0.30},{upTo:25,v:0.34},{v:0.40}],
     perMileRules:[
@@ -143,25 +150,29 @@ const cfg = {
     offsets:[],
     longTrim:{ enabled:true, when:{mMin:35,tMin:90}, pct:0.03, minAbs:2.00 }
   },
+
+  // Rate 2: raise long/mid-long core; keep shorts tight
   rate2:{
-    perMinute:[{upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.58}],
+    perMinute:[{upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.60}], // 0.60 restores top-tier time weight
     perMileRules:[
-      {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, v:3.75},
-      {when:{mMin:18,mMax:25,tMin:55,tMax:70},  v:4.05},
-      {when:{mMin:25}, v:4.10},
-      {when:{mMin:7.5}, v:4.12},
+      {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, v:3.85}, // +0.10 to lift 8–10 mi, 40–55 min
+      {when:{mMin:18,mMax:25,tMin:55,tMax:70},  v:4.08}, // small long uplift
+      {when:{mMin:25}, v:4.12},
+      {when:{mMin:7.5}, v:4.15}, // slightly firmer beyond 7.5 mi
       {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:4.00},
       {when:{mMin:1.8,mMax:2.2,tMin:10,tMax:20}, v:3.65},
       {v:4.29}
     ],
     offsets:[
-      {when:{mMax:1.2,tMin:6,tMax:13}, d:0.80},
+      {when:{mMax:1.2,tMin:6,tMax:13}, d:0.60},   // keep short-hop boost modest (avoid £4.80 lows)
       {when:{mMin:1.8,mMax:2.2,tMin:10,tMax:20}, d:0.20},
-      {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, d:-1.80},
-      {when:{mMin:18,mMax:21,tMin:45,tMax:60}, d:-1.50}
+      {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, d:-1.20}, // less harsh than -1.8
+      {when:{mMin:18,mMax:21,tMin:45,tMax:60}, d:-1.20}
     ],
     longTrim:{ enabled:true, when:{mMin:25,tMin:65}, pct:0.05, minAbs:3.50 }
   },
+
+  // Rate 3: core nearer previous lower; avoid too-tall ranges
   rate3:{
     perMinute:[{upTo:12,v:0.58},{upTo:30,v:0.62},{v:0.44}],
     perMileRules:[{v:4.00}],
@@ -171,28 +182,28 @@ const cfg = {
       {when:{mMin:1.8,mMax:2.2,tMin:9,tMax:12}, d:-1.40},
       {when:{mMin:5.5,mMax:6.3,tMin:28,tMax:40}, d:-1.60},
       {when:{mMin:18,mMax:20,tMin:45,tMax:60}, d:1.50},
-      // mid-band softeners to bring core closer to the (often accurate) lower bound you observed
+      // soften mid-bands a touch so core ~ lower
       {when:{mMin:4.0,mMax:5.6,tMin:15,tMax:35}, d:-0.80},
       {when:{mMin:6.5,mMax:8.0,tMin:22,tMax:40}, d:-1.20}
     ]
   }
 };
 
-/* ===== Helpers ===== */
+/* ========= Helpers ========= */
 const r2 = (x)=>Math.round(x*100)/100;
 const roundTo = (x,inc)=>Math.round(x/inc)*inc;
 const floorTo  = (x,inc)=>Math.floor(x/inc)*inc;
 const ceilTo   = (x,inc)=>Math.ceil (x/inc)*inc;
 const $ = (id)=>document.getElementById(id);
 
-/* ===== State persistence for inputs ===== */
+/* ========= Persist inputs ========= */
 const FORM_KEY='cabwizz_form_v1';
 const FORM_IDS=['tStart','tEnd','miStart','miEnd','mins','miles','meter'];
 function saveForm(){ const o={}; FORM_IDS.forEach(id=>o[id]=$(id).value??''); localStorage.setItem(FORM_KEY, JSON.stringify(o)); }
 function loadForm(){ try{ const raw=localStorage.getItem(FORM_KEY); if(!raw) return; const o=JSON.parse(raw); FORM_IDS.forEach(id=>{ if(o[id]!==undefined) $(id).value=o[id]; }); }catch(e){} }
 function clearForm(){ FORM_IDS.forEach(id=>$(id).value=''); saveForm(); }
 
-/* ===== Rule helpers ===== */
+/* ========= Rule helpers ========= */
 function matches(w, miles, mins){
   if(!w) return true;
   if(w.mMin!==undefined && miles < w.mMin) return false;
@@ -226,54 +237,58 @@ function longTrim(core, trim, miles, mins){
   return roundTo(rounded - dec, cfg.inc);
 }
 
-/* ===== Asymmetric, context-aware range builder ===== */
+/* ========= Asymmetric range builder (tuned) ========= */
 function baseBand(miles){
   return cfg.rangeBands.find(x=>miles<=x.max) || cfg.rangeBands[cfg.rangeBands.length-1];
 }
 function buildRange(core, miles, mins, rateKey){
   const b = baseBand(miles);
-  // start with base adj
   let lowerAdj = Math.max(b.lower.fixed, core*b.lower.pct);
   let upperAdj = Math.max(b.upper.fixed, core*b.upper.pct);
 
-  // 3–5 miles: raise U, tighten L (per your observations)
+  // 3–5 mi: raise upper, tighten lower (your feedback)
   if(miles>=3 && miles<=5){
-    lowerAdj = Math.max(lowerAdj*0.75, 1.00);   // bring lower closer to core
-    upperAdj = Math.max(upperAdj*1.30, 2.40);   // give more headroom
+    lowerAdj = Math.max(lowerAdj*0.75, 0.80);
+    upperAdj = Math.max(upperAdj*1.35, 2.60);
   }
 
-  // time-heavy short trips (<=2.5 mi but >15 min): widen both, upper a bit more
+  // Very short (<=1.0 mi): keep ranges tight and sensible
+  if(miles<=1.0){
+    lowerAdj = Math.min(lowerAdj, 1.00);
+    upperAdj = Math.min(Math.max(upperAdj, 1.20), 1.80);
+  }
+
+  // Short but time-heavy (<=2.5 mi & >=15 min): widen a bit; upper more than lower
   if(miles<=2.5 && mins>=15){
-    lowerAdj = Math.max(lowerAdj*1.05, lowerAdj+0.40);
+    lowerAdj = Math.max(lowerAdj*1.05, lowerAdj+0.30);
     upperAdj = Math.max(upperAdj*1.20, upperAdj+0.80);
   }
 
-  // longish & slow (>=6 mi and >=35 min): add a touch on the upper
+  // Long & slow (>=6 mi & >=35 min): protect upper from clipping
   if(miles>=6 && mins>=35){
     upperAdj = Math.max(upperAdj*1.12, upperAdj+0.80);
   }
 
-  // Rate 3: you said lower felt like the meter; push core nearer lower,
-  // and trim the upper slightly so the band isn't too tall.
+  // Rate 3: lower sits near actual; trim upper a touch
   if(rateKey==='rate3'){
-    lowerAdj = Math.max(lowerAdj*1.10, lowerAdj+0.30); // a little more below core
-    upperAdj = Math.max(upperAdj*0.92, upperAdj-0.30); // small trim
+    lowerAdj = Math.max(lowerAdj*1.10, lowerAdj+0.30);
+    upperAdj = Math.max(upperAdj*0.92, upperAdj-0.30);
   }
 
-  // Build raw bounds
+  // Build bounds
   let lower = floorTo(roundTo(core - lowerAdj, cfg.inc), cfg.inc);
   let upper = ceilTo (roundTo(core + upperAdj, cfg.inc), cfg.inc);
 
-  // Guarantee sensible minimum gaps by distance (so we don't clip actuals)
+  // Minimum gaps to avoid clipping meters
   const minUpperGap = (miles>=10? 4.0 : miles>=6? 3.0 : 2.0);
-  const minLowerGap = (miles>=3 && miles<=5? 1.0 : 1.2); // closer lower in 3–5 mi window
+  const minLowerGap = (miles>=3 && miles<=5? 1.0 : 1.2);
   if(upper < core + minUpperGap) upper = roundTo(core + minUpperGap, cfg.inc);
   if(lower > core - minLowerGap) lower = roundTo(core - minLowerGap, cfg.inc);
 
   return {lower, upper};
 }
 
-/* ===== Start/End → mins/miles ===== */
+/* ========= Start/End → mins/miles ========= */
 function parseTimeToMinutes(t){
   if(!t || !/^\d{2}:\d{2}$/.test(t)) return null;
   const [H,M] = t.split(':').map(Number);
@@ -296,7 +311,7 @@ function computeFromStartEnd(){
   saveForm();
 }
 
-/* ===== Fare core ===== */
+/* ========= Fare core ========= */
 function estimate(rateKey, mins, miles){
   const r = cfg[rateKey];
   const mPart = minutePart(r.perMinute, mins);
@@ -308,25 +323,22 @@ function estimate(rateKey, mins, miles){
   return { core, lower:rng.lower, upper:rng.upper };
 }
 
-/* ===== Rate Now & Cross-over detection (based on START & END) ===== */
+/* ========= Rate rules + cross-over ========= */
 function rateNowLabelFor(startMinutes, weekday){ // weekday: 0=Sun..6=Sat
   const m = startMinutes; if(m==null) return 'Rate 1';
   const inR=(a,b)=> (m>=a && m<b); const R1='Rate 1',R2='Rate 2',R3='Rate 3';
-  if(weekday>=1 && weekday<=5){ // Mon–Fri
-    if(inR(300,1200)) return R1; if(inR(1200,1320)) return R2; return R3;
-  }
-  if(weekday===6){ if(inR(300,1320)) return R2; return R3; } // Sat
-  if(weekday===0){ if(inR(300,1320)) return R2; return R3; } // Sun
+  if(weekday>=1 && weekday<=5){ if(inR(300,1200)) return R1; if(inR(1200,1320)) return R2; return R3; }
+  if(weekday===6){ if(inR(300,1320)) return R2; return R3; }
+  if(weekday===0){ if(inR(300,1320)) return R2; return R3; }
   return R1;
 }
 function endRateLabelFor(startMin,endMin,weekday){
-  // If end crosses midnight, weekday shifts
   let endWeekday = weekday;
   if(endMin<startMin) endWeekday = (weekday+1)%7;
   return rateNowLabelFor(endMin, endWeekday);
 }
 
-/* ===== UI helpers ===== */
+/* ========= UI helpers ========= */
 function fmt(x){ return '£'+r2(x).toFixed(2); }
 function fmtRange(core,lo,hi){ return `${fmt(core)}  (${fmt(lo)}–${fmt(hi)})`; }
 function weekdayStamp(d=new Date()){
@@ -335,7 +347,7 @@ function weekdayStamp(d=new Date()){
   return `${wk} ${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-/* ===== Calculate & render ===== */
+/* ========= Calculate & render ========= */
 function refresh(){
   computeFromStartEnd();
   const mins = Number($('mins').value);
@@ -353,7 +365,7 @@ function refresh(){
   return {mins, miles, r1, r2, r3};
 }
 
-/* ===== Logging (table stays as before for on-screen QA) ===== */
+/* ========= On-screen log ========= */
 const KEY='cabwizz_log_v1';
 function loadLog(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ return [] } }
 function saveLog(rows){ localStorage.setItem(KEY, JSON.stringify(rows)); renderLog(); }
@@ -371,14 +383,28 @@ function renderLog(){
   });
 }
 
-/* ===== CSV Export (ONLY applicable rate + timing info + crossover flag) ===== */
+/* ========= CSV (only applicable rate; add a second row if crossing) ========= */
 function exportCSV(){
   const rows = loadLog();
-  const head = ['When','Minutes','Miles','Core/Range','Meter','Rate Now','Crossed?','Start','End','End Rate'];
-  const csv = [head].concat(rows.map(r=>[
-    r.when, r.mins, r.miles, r.coreRangeForRate||'', r.meter||'', r.rateNow||'',
-    r.crossed?'Yes':'No', r.start||'', r.end||'', r.endRate||''
-  ])).map(arr=>arr.map(v=>{
+  const head = ['When','Minutes','Miles','Core/Range','Meter','Rate','Note','Start','End'];
+  const out = [head];
+
+  rows.forEach(r=>{
+    // main row (start rate)
+    out.push([
+      r.when, r.mins, r.miles, r.coreRangeForRate||'', r.meter||'',
+      r.rateNow||'', r.note||'', r.start||'', r.end||''
+    ]);
+    // optional crossover row
+    if(r.crossed && r.endRate && r.endRate!==r.rateNow){
+      out.push([
+        r.when, r.mins, r.miles, '', r.meter||'',
+        r.endRate, `Crossover ${r.rateNow}→${r.endRate}`, r.start||'', r.end||''
+      ]);
+    }
+  });
+
+  const csv = out.map(arr=>arr.map(v=>{
     const s=String(v).replaceAll('"','""'); return `"${s}"`;
   }).join(',')).join('\r\n');
 
@@ -387,7 +413,7 @@ function exportCSV(){
   a.download='cabwizz_journeys.csv'; a.click(); URL.revokeObjectURL(a.href);
 }
 
-/* ===== Optional webhook ===== */
+/* ========= Optional webhook ========= */
 const WEBHOOK_URL = '';
 async function sendWebhook(payload){
   if(!WEBHOOK_URL) return;
@@ -395,23 +421,17 @@ async function sendWebhook(payload){
   catch(e){ console.warn('Webhook failed',e); }
 }
 
-/* ===== Events ===== */
-window.addEventListener('load', ()=>{
-  loadForm(); computeFromStartEnd();
-});
+/* ========= Events ========= */
+window.addEventListener('load', ()=>{ loadForm(); computeFromStartEnd(); });
 document.getElementById('calcBtn').addEventListener('click', refresh);
 ['tStart','tEnd','miStart','miEnd','mins','miles','meter'].forEach(id=>{
   document.getElementById(id).addEventListener('input', ()=>{
-    if(id==='tStart'||id==='tEnd'||id==='miStart'||id==='miEnd') computeFromStartEnd();
-    else saveForm();
+    if(id==='tStart'||id==='tEnd'||id==='miStart'||id==='miEnd') computeFromStartEnd(); else saveForm();
   });
 });
-document.getElementById('resetBtn').addEventListener('click', ()=>{
-  if(confirm('Reset all input fields?')){ clearForm(); }
-});
+document.getElementById('resetBtn').addEventListener('click', ()=>{ if(confirm('Reset all input fields?')) clearForm(); });
 document.getElementById('saveBtn').addEventListener('click', async ()=>{
   const res = refresh(); if(!res) return;
-
   const now = new Date();
   const whenStr = weekdayStamp(now);
   const tStartStr = $('tStart').value || '';
@@ -424,7 +444,6 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
   const endRate = (endMin!=null && startMin!=null) ? endRateLabelFor(startMin, endMin, weekday) : rateNow;
   const crossed = (endRate !== rateNow);
 
-  // choose rate object
   const chosen = rateNow==='Rate 1' ? res.r1 : rateNow==='Rate 2' ? res.r2 : res.r3;
   const coreRangeForRate = `${fmt(chosen.core)} (${fmt(chosen.lower)}–${fmt(chosen.upper)})`;
 
@@ -458,11 +477,9 @@ document.getElementById('clearBtn').addEventListener('click', ()=>{
 });
 document.getElementById('exportBtn').addEventListener('click', exportCSV);
 
-/* PWA */
+/* ========= PWA ========= */
 if (location.protocol.startsWith('http') && 'serviceWorker' in navigator) {
-  window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('sw.js').catch(console.warn);
-  });
+  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(console.warn); });
 }
 </script>
 </body>

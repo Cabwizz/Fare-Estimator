@@ -1,4 +1,4 @@
-const CACHE='cabwizz-cache-v12';
+const CACHE='cabwizz-cache-v13';
 const ASSETS=['./','index.html','sw.js','manifest.webmanifest'];
 
 self.addEventListener('install',e=>{

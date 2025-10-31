@@ -194,34 +194,42 @@ const cfg = {
   },
 
   /* ===== RATE 3 (using your latest PDF) ===== */
-  rate3:{
-    // minute tiers: fast first 12, then 12–30, then cruise
-    perMinute:[{upTo:12,v:0.58},{upTo:30,v:0.62},{v:0.44}],
-    perMileRules:[
-      // short trips were low
-      {when:{mMax:1.0,tMax:8}, v:3.40},       // 0.6–1.0 mi → +0.40
-      // 1.4–1.6 mi band was low by ~0.5
-      {when:{mMin:1.35,mMax:1.65,tMin:8,tMax:14}, v:3.55},
-      // 3.3–3.5 mi was low by ~0.6
-      {when:{mMin:3.3,mMax:3.6,tMin:15,tMax:24}, v:3.55},
-      // 7–9 mi long jobs under by ~2–3%
-      {when:{mMin:7.0,mMax:9.5,tMin:28,tMax:45}, v:4.10},
-      // general band
-      {when:{mMin:4.0,mMax:5.0,tMin:12,tMax:30}, v:3.55},
-      {when:{mMin:5.0,mMax:7.0,tMin:12,tMax:30}, v:3.50},
-      {when:{mMin:3.0,mMax:4.0,tMin:12,tMax:30}, v:3.40},
-      {v:4.00}
-    ],
-    offsets:[
-      {when:{mMax:0.5,tMax:5}, d:-0.60},
-      {when:{mMax:0.8,tMax:5}, d:-0.40},
-      {when:{mMin:1.8,mMax:2.2,tMin:9,tMax:12}, d:-1.20},
-      {when:{mMin:5.5,mMax:6.3,tMin:28,tMax:40}, d:-1.40},
-      {when:{mMin:18,mMax:20,tMin:45,tMax:60}, d:1.20},
-      {when:{mMin:4.0,mMax:5.6,tMin:15,tMax:35}, d:-0.80},
-      {when:{mMin:6.5,mMax:8.0,tMin:22,tMax:40}, d:-1.00}
-    ]
-  }
+rate3: {
+  perMinute: [
+    { upTo: 12, v: 0.58 },
+    { upTo: 30, v: 0.62 },
+    { v: 0.44 }
+  ],
+  perMileRules: [
+    // Specific adjustments
+    { when: { mMin: 3.35, mMax: 3.55, tMin: 19, tMax: 21 }, v: 3.25 },
+    { when: { mMin: 3.35, mMax: 3.55, tMin: 24, tMax: 27 }, v: 3.70 },
+    { when: { mMin: 4.4, mMax: 4.65, tMin: 19, tMax: 22 }, v: 3.95 },
+    // Adjustments for longer journeys
+    { when: { mMin: 9.0, mMax: 9.2, tMin: 35, tMax: 45 }, v: 5.8 },
+    { when: { mMin: 8.5, mMax: 8.7, tMin: 25, tMax: 30 }, v: 5.4 },
+    { when: { mMin: 7.8, mMax: 8.0, tMin: 32, tMax: 35 }, v: 5.2 },
+    { when: { mMin: 6.3, mMax: 6.5, tMin: 24, tMax: 27 }, v: 4.9 },
+    { when: { mMin: 5.8, mMax: 6.0, tMin: 25, tMax: 28 }, v: 4.8 },
+    // Adjustments for shorter journey you mentioned
+    { when: { mMin: 0.6, mMax: 0.7, tMin: 3, tMax: 4 }, v: 13.9 },
+    // Keep existing shaping
+    { when: { mMin: 4.0, mMax: 5.0, tMin: 12, tMax: 30 }, v: 3.55 },
+    { when: { mMin: 5.0, mMax: 7.0, tMin: 12, tMax: 30 }, v: 3.50 },
+    { when: { mMin: 3.0, mMax: 4.0, tMin: 12, tMax: 30 }, v: 3.40 },
+    // fallback
+    { v: 4.00 }
+  ],
+  offsets: [
+    { when: { mMax: 0.5, tMax: 5 }, d: -0.60 },
+    { when: { mMax: 0.8, tMax: 5 }, d: -0.40 },
+    { when: { mMin: 1.8, mMax: 2.2, tMin: 9, tMax: 12 }, d: -1.20 },
+    { when: { mMin: 5.5, mMax: 6.3, tMin: 28, tMax: 40 }, d: -1.40 },
+    { when: { mMin: 18, mMax: 20, tMin: 45, tMax: 60 }, d: 1.20 },
+    { when: { mMin: 4.0, mMax: 5.6, tMin: 15, tMax: 35 }, d: -0.80 },
+    { when: { mMin: 6.5, mMax: 8.0, tMin: 22, tMax: 40 }, d: -1.00 }
+  ]
+}
 };
 
 /* ========= helpers ========= */

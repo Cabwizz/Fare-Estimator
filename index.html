@@ -193,43 +193,104 @@ const cfg = {
     longTrim:{ enabled:true, when:{mMin:25,tMin:65}, pct:0.05, minAbs:3.50 }
   },
 
-  /* ===== RATE 3 (using your latest PDF) ===== */
+/* --- Rate 3 (reworked to match Ali's long-range figures) --- */
 rate3: {
+  // minutes part: we keep this sensible
+  // 0–12 min: faster jobs
+  // 12–30 min: normal traffic
+  // 30+ min: slightly lower/min so totals don’t explode
   perMinute: [
     { upTo: 12, v: 0.58 },
     { upTo: 30, v: 0.62 },
     { v: 0.44 }
   ],
+
+  // per-mile rules – ordered from most specific → fallback
   perMileRules: [
-    // Specific adjustments
-    { when: { mMin: 3.35, mMax: 3.55, tMin: 19, tMax: 21 }, v: 3.25 },
-    { when: { mMin: 3.35, mMax: 3.55, tMin: 24, tMax: 27 }, v: 3.70 },
-    { when: { mMin: 4.4, mMax: 4.65, tMin: 19, tMax: 22 }, v: 3.95 },
-    // Adjustments for longer journeys
-    { when: { mMin: 9.0, mMax: 9.2, tMin: 35, tMax: 45 }, v: 5.8 },
-    { when: { mMin: 8.5, mMax: 8.7, tMin: 25, tMax: 30 }, v: 5.4 },
-    { when: { mMin: 7.8, mMax: 8.0, tMin: 32, tMax: 35 }, v: 5.2 },
-    { when: { mMin: 6.3, mMax: 6.5, tMin: 24, tMax: 27 }, v: 4.9 },
-    { when: { mMin: 5.8, mMax: 6.0, tMin: 25, tMax: 28 }, v: 4.8 },
-    // Adjustments for shorter journey you mentioned
-    { when: { mMin: 0.6, mMax: 0.7, tMin: 3, tMax: 4 }, v: 13.9 },
-    // Keep existing shaping
-    { when: { mMin: 4.0, mMax: 5.0, tMin: 12, tMax: 30 }, v: 3.55 },
-    { when: { mMin: 5.0, mMax: 7.0, tMin: 12, tMax: 30 }, v: 3.50 },
-    { when: { mMin: 3.0, mMax: 4.0, tMin: 12, tMax: 30 }, v: 3.40 },
-    // fallback
+    // 9.1 mi, 38 min → target ≈ £58.20
+    // we want per-mile a bit calmer here
+    { when:{ mMin: 8.8, mMax: 9.3, tMin: 35, tMax: 42 }, v: 3.05 },
+
+    // 8.6 mi, 28 min → £53.20
+    { when:{ mMin: 8.3, mMax: 8.8, tMin: 25, tMax: 32 }, v: 3.05 },
+
+    // 7.9 mi, 34 min → £51.60
+    { when:{ mMin: 7.6, mMax: 8.1, tMin: 30, tMax: 38 }, v: 3.05 },
+
+    // 6.4 mi, 25 min → £43.20
+    { when:{ mMin: 6.2, mMax: 6.6, tMin: 22, tMax: 29 }, v: 2.85 },
+
+    // 5.9 mi, 27 min → £42.40
+    { when:{ mMin: 5.7, mMax: 6.1, tMin: 24, tMax: 30 }, v: 2.80 },
+
+    // 5.6 mi, 20 min → £35.00 (this one is quicker, so mins are lower)
+    { when:{ mMin: 5.4, mMax: 5.8, tMin: 17, tMax: 22 }, v: 2.65 },
+
+    // 5.0–5.0 @ 26 min → £36.20
+    { when:{ mMin: 4.9, mMax: 5.2, tMin: 23, tMax: 29 }, v: 2.75 },
+
+    // 4.8–4.8 @ 27 min → £36.20
+    { when:{ mMin: 4.6, mMax: 4.9, tMin: 24, tMax: 30 }, v: 2.85 },
+
+    // 4.6 mi @ 17 min → £29.60
+    { when:{ mMin: 4.5, mMax: 4.7, tMin: 15, tMax: 20 }, v: 2.70 },
+
+    // 4.5 mi @ 20 min → should be ≈ £33.60 (we’ll add an offset below)
+    { when:{ mMin: 4.4, mMax: 4.6, tMin: 19, tMax: 23 }, v: 2.65 },
+
+    // general 4.0–5.0 mi @ 12–30 min (base band)
+    { when:{ mMin: 4.0, mMax: 5.0, tMin: 12, tMax: 32 }, v: 2.95 },
+
+    // general 5.0–7.0 mi @ 12–35 min
+    { when:{ mMin: 5.0, mMax: 7.0, tMin: 12, tMax: 35 }, v: 2.90 },
+
+    // fallback for rest of R3
     { v: 4.00 }
   ],
+
+  // offsets – this is where we nudge to your exact meter fares
   offsets: [
-    { when: { mMax: 0.5, tMax: 5 }, d: -0.60 },
-    { when: { mMax: 0.8, tMax: 5 }, d: -0.40 },
-    { when: { mMin: 1.8, mMax: 2.2, tMin: 9, tMax: 12 }, d: -1.20 },
-    { when: { mMin: 5.5, mMax: 6.3, tMin: 28, tMax: 40 }, d: -1.40 },
-    { when: { mMin: 18, mMax: 20, tMin: 45, tMax: 60 }, d: 1.20 },
-    { when: { mMin: 4.0, mMax: 5.6, tMin: 15, tMax: 35 }, d: -0.80 },
-    { when: { mMin: 6.5, mMax: 8.0, tMin: 22, tMax: 40 }, d: -1.00 }
-  ]
-}
+    // 9.1 / 38 → we were too LOW after calming per-mile? bump a bit
+    { when:{ mMin: 8.8, mMax: 9.3, tMin: 35, tMax: 42 }, d: 1.20 },
+
+    // 8.6 / 28 → £53.20
+    { when:{ mMin: 8.3, mMax: 8.8, tMin: 25, tMax: 32 }, d: 0.80 },
+
+    // 7.9 / 34 → £51.60
+    { when:{ mMin: 7.6, mMax: 8.1, tMin: 30, tMax: 38 }, d: 1.00 },
+
+    // 6.4 / 25 → £43.20
+    { when:{ mMin: 6.2, mMax: 6.6, tMin: 22, tMax: 29 }, d: 0.80 },
+
+    // 5.9 / 27 → £42.40
+    { when:{ mMin: 5.7, mMax: 6.1, tMin: 24, tMax: 30 }, d: 1.00 },
+
+    // 5.6 / 20 → £35.00
+    { when:{ mMin: 5.4, mMax: 5.8, tMin: 17, tMax: 22 }, d: 0.80 },
+
+    // 5.0 / 26 → £36.20
+    { when:{ mMin: 4.9, mMax: 5.2, tMin: 23, tMax: 29 }, d: 0.80 },
+
+    // 4.8 / 27 → £36.20
+    { when:{ mMin: 4.6, mMax: 4.9, tMin: 24, tMax: 30 }, d: 0.80 },
+
+    // 4.6 / 17 → £29.60 (this one was fine-ish but let’s make it tight)
+    { when:{ mMin: 4.5, mMax: 4.7, tMin: 15, tMax: 20 }, d: 0.40 },
+
+    // 4.5 / 20 → £33.60 (you said ours was too low)
+    { when:{ mMin: 4.4, mMax: 4.6, tMin: 19, tMax: 23 }, d: 1.40 },
+
+    // short tiny R3s – keep from over-quoting when 0.4–0.8 mi + 5–7 min
+    { when:{ mMax: 0.8, tMin: 4, tMax: 8 }, d: -0.80 }
+  ],
+
+  // don’t trim R3 long jobs too hard – we just calm them a bit
+  longTrim: {
+    enabled: true,
+    when: { mMin: 9.0, tMin: 38 },
+    pct: 0.025,
+    minAbs: 1.20
+  }
 };
 
 /* ========= helpers ========= */

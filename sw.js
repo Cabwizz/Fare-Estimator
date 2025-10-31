@@ -1,19 +1,14 @@
-const CACHE = 'cabwizz-cache-v19'; // match v1.9.0
-const ASSETS = [
-  './',
-  'index.html',
-  'sw.js',
-  'manifest.webmanifest'
-];
+const CACHE = 'cabwizz-cache-v17';
+const ASSETS = ['./','index.html','sw.js','manifest.webmanifest'];
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => cache.addAll(ASSETS))
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE).then((c) => c.addAll(ASSETS))
   );
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
+self.addEventListener('activate', (e) => {
+  e.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
         keys.map(k => {
@@ -25,18 +20,16 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-self.addEventListener('fetch', (event) => {
-  const req = event.request;
-  const url = new URL(req.url);
-
+self.addEventListener('fetch', (e) => {
+  const url = new URL(e.request.url);
   if (url.origin === location.origin) {
-    event.respondWith(
-      caches.match(req).then((cached) => {
-        if (cached) return cached;
-        return fetch(req).then((res) => {
-          const copy = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(req, copy));
-          return res;
+    e.respondWith(
+      caches.match(e.request).then(res => {
+        if (res) return res;
+        return fetch(e.request).then(r => {
+          const copy = r.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy));
+          return r;
         }).catch(() => caches.match('index.html'));
       })
     );

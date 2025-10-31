@@ -1,24 +1,25 @@
 // ------- CabWizz SW (cache + offline) -------
-const CACHE_NAME = 'cabwizz-cache-v16';
+// 🔁 Bump BOTH of these together for a new release:
+const APP_VERSION = 'v16';
+const CACHE_NAME  = `cabwizz-cache-${APP_VERSION}`;
+
 const APP_SHELL = [
   './',
   'index.html',
   'manifest.webmanifest',
   'sw.js',
-  // add icons here if you add them to the project:
+  // add icons here if you add them:
   // 'icons/icon-192.png',
   // 'icons/icon-512.png',
 ];
 
 // INSTALL: pre-cache shell
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((c) => c.addAll(APP_SHELL))
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(APP_SHELL)));
   self.skipWaiting();
 });
 
-// ACTIVATE: remove old versions, claim clients
+// ACTIVATE: remove old caches, claim clients
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -32,7 +33,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// FETCH: strategy matrix
+// FETCH: offline strategies
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -40,15 +41,13 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   const sameOrigin = url.origin === location.origin;
 
-  // 1) Navigations → network-first + offline fallback
+  // Navigations → network-first, fallback to cached index
   if (sameOrigin && req.mode === 'navigate') {
     event.respondWith(
       fetch(req)
         .then((res) => {
           const copy = res.clone();
-          event.waitUntil(
-            caches.open(CACHE_NAME).then((c) => c.put('index.html', copy))
-          );
+          event.waitUntil(caches.open(CACHE_NAME).then((c) => c.put('index.html', copy)));
           return res;
         })
         .catch(() => caches.match('index.html'))
@@ -56,7 +55,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 2) Same-origin static assets → stale-while-revalidate
+  // Same-origin static → stale-while-revalidate
   if (sameOrigin && ['script','style','image','font','document'].includes(req.destination)) {
     event.respondWith(
       caches.match(req).then((cached) => {
@@ -64,9 +63,7 @@ self.addEventListener('fetch', (event) => {
           .then((res) => {
             if (res && res.ok) {
               const copy = res.clone();
-              event.waitUntil(
-                caches.open(CACHE_NAME).then((c) => c.put(req, copy))
-              );
+              event.waitUntil(caches.open(CACHE_NAME).then((c) => c.put(req, copy)));
             }
             return res;
           })
@@ -77,7 +74,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3) Everything else → network-first with cache fallback
+  // Everything else → network-first with cache fallback
   event.respondWith(
     fetch(req)
       .then((res) => {
@@ -89,4 +86,12 @@ self.addEventListener('fetch', (event) => {
       })
       .catch(() => caches.match(req))
   );
+});
+
+// 👉 Version messaging: page asks; SW replies with version & cache
+self.addEventListener('message', (event) => {
+  if (!event.data) return;
+  if (event.data.type === 'GET_VERSION') {
+    event.source?.postMessage({ type: 'VERSION', version: APP_VERSION, cache: CACHE_NAME });
+  }
 });

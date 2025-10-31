@@ -1,9 +1,10 @@
 {
-  "name": "CabWizz Fare Estimator (v1.7)",
+  "name": "CabWizz Fare Estimator",
   "short_name": "CabWizz",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#f7f7f8",
   "theme_color": "#0a7",
+  "description": "CabWizz Fare Estimator — v3.3 (R3 tuned)",
   "icons": []
 }

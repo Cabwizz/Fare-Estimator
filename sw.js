@@ -1,35 +1,36 @@
-const CACHE = 'cabwizz-cache-v17';
-const ASSETS = ['./','index.html','sw.js','manifest.webmanifest'];
+const CACHE = 'cabwizz-cache-v33'; // bump when you change html/js
+const ASSETS = [
+  './',
+  'index.html',
+  'sw.js',
+  'manifest.webmanifest'
+];
 
-self.addEventListener('install', (e) => {
-  e.waitUntil(
-    caches.open(CACHE).then((c) => c.addAll(ASSETS))
+self.addEventListener('install', (event) => {
+  event.waitUntil(
+    caches.open(CACHE).then((cache) => cache.addAll(ASSETS))
   );
 });
 
-self.addEventListener('activate', (e) => {
-  e.waitUntil(
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
     caches.keys().then(keys =>
       Promise.all(
-        keys.map(k => {
-          if (k !== CACHE) return caches.delete(k);
-        })
+        keys.filter(k => k !== CACHE).map(k => caches.delete(k))
       )
-    )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-self.addEventListener('fetch', (e) => {
-  const url = new URL(e.request.url);
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
   if (url.origin === location.origin) {
-    e.respondWith(
-      caches.match(e.request).then(res => {
-        if (res) return res;
-        return fetch(e.request).then(r => {
-          const copy = r.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copy));
-          return r;
+    event.respondWith(
+      caches.match(event.request).then((res) => {
+        return res || fetch(event.request).then((networkRes) => {
+          const copy = networkRes.clone();
+          caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+          return networkRes;
         }).catch(() => caches.match('index.html'));
       })
     );

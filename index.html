@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#0a7">
-  <title>CabWizz Fare Estimator — v3.3 (R3 tuned)</title>
+  <title>CabWizz Fare Estimator — v3.4 (R3 uses R2 for 5mi+)</title>
   <style>
     :root{--ok:#0a7;--warn:#f8a100;--info:#1869ff;--danger:#d33;--stroke:#d1d1d6}
     *{box-sizing:border-box}
@@ -39,7 +39,7 @@
 <body>
   <h1>
     CabWizz Fare Estimator
-    <span class="badge" id="appVersion">v3.3 (R3 tuned)</span>
+    <span class="badge" id="appVersion">v3.4 (R3→R2 for 5mi+)</span>
   </h1>
 
   <div class="card">
@@ -121,13 +121,13 @@
 
 <script>
 /* ========= CONFIG ========= */
-const APP_VERSION = 'v3.3 (R3 tuned)';
+const APP_VERSION = 'v3.4 (R3→R2 for 5mi+)';
 
 const cfg = {
   baseFare: 4.20,
   inc: 0.20,
 
-  // global range bands (we'll clamp after)
+  // global range bands (kept)
   rangeBands: [
     { max: 1.5, lower:{fixed:0.30,pct:0.02}, upper:{fixed:0.60,pct:0.05} },
     { max: 2.5, lower:{fixed:0.60,pct:0.04}, upper:{fixed:1.00,pct:0.06} },
@@ -136,7 +136,7 @@ const cfg = {
     { max: 1e9, lower:{fixed:2.00,pct:0.02}, upper:{fixed:2.50,pct:0.04} },
   ],
 
-  /* --- Rate 1 (your last working profile, left as-is) --- */
+  /* --- Rate 1 (your last working profile) --- */
   rate1:{
     perMinute:[{upTo:12,v:0.30},{upTo:25,v:0.36},{v:0.40}],
     perMileRules:[
@@ -155,7 +155,7 @@ const cfg = {
     longTrim:{ enabled:true, when:{mMin:35,tMin:90}, pct:0.03, minAbs:2.00 }
   },
 
-  /* --- Rate 2 (kept as last stable for now) --- */
+  /* --- Rate 2 (your stable one) --- */
   rate2:{
     perMinute:[{upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.60}],
     perMileRules:[
@@ -182,58 +182,35 @@ const cfg = {
     longTrim:{ enabled:true, when:{mMin:25,tMin:65}, pct:0.05, minAbs:3.50 }
   },
 
-  /* --- RATE 3 (corrected with Ali’s long-band trims) --- */
+  /* --- Rate 3 (same as before BUT 5mi+ will call R2) --- */
   rate3: {
-    // minutes on R3 are a bit heavier than R1/R2 but we keep your base shape
-    // 0–12m = 0.58, 12–30m = 0.62, 30m+ = 0.44 (we’ll trim long ones below)
     perMinute: [
       { upTo: 12, v: 0.58 },
       { upTo: 30, v: 0.62 },
       { v: 0.44 }
     ],
-
-    // per-mile rules
     perMileRules: [
-      // 1) KEEP the good 3.3–3.5 region (you said 16m @ 3.4 came out nice)
       { when: { mMin: 3.3, mMax: 3.6, tMin: 14, tMax: 22 }, v: 3.55 },
       { when: { mMin: 3.3, mMax: 3.6, tMin: 23, tMax: 28 }, v: 3.60 },
-
-      // 2) 4.5–5.0 mi, 18–30m → we want ~£33–36 (20m@4.5 should be £33.60)
       { when: { mMin: 4.5, mMax: 5.0, tMin: 16, tMax: 22 }, v: 3.70 },
       { when: { mMin: 4.5, mMax: 5.0, tMin: 23, tMax: 32 }, v: 3.55 },
-
-      // 3) 5.0–6.0 mi, 20–30m → cap to match 26m@5.0 ≈ £36.20, 27m@5.9 ≈ £42.40
       { when: { mMin: 5.0, mMax: 6.0, tMin: 18, tMax: 24 }, v: 3.45 },
       { when: { mMin: 5.0, mMax: 6.0, tMin: 25, tMax: 34 }, v: 3.38 },
-
-      // 4) 6.0–6.6 mi, 24–32m → we saw 25m@6.4 = £43.20
       { when: { mMin: 6.0, mMax: 6.6, tMin: 22, tMax: 32 }, v: 3.35 },
-
-      // 5) 7.5–9.5 mi, 28–42m → your meter said:
-      //    34m @ 7.9 → £51.60
-      //    28m @ 8.6 → £53.20
-      //    38m @ 9.1 → £58.20
-      // so we LOWER the per-mile here
       { when: { mMin: 7.5, mMax: 9.5, tMin: 26, tMax: 36 }, v: 3.25 },
       { when: { mMin: 7.5, mMax: 9.5, tMin: 37, tMax: 46 }, v: 3.10 },
-
-      // fallback
       { v: 4.00 }
     ],
-
-    // offsets for exact journeys you just gave
     offsets:[
-      // long too-high ones → force to your meter
-      {when:{mMin:9.0,mMax:9.2,tMin:36,tMax:40}, d: -20.40},  // 38m/9.1mi: we knock down to ~58.20
-      {when:{mMin:8.5,mMax:8.7,tMin:26,tMax:30}, d: -8.80},   // 28m/8.6mi → 53.20
-      {when:{mMin:7.8,mMax:8.0,tMin:32,tMax:36}, d: -8.40},   // 34m/7.9mi → 51.60
-      {when:{mMin:6.3,mMax:6.5,tMin:23,tMax:27}, d: -5.40},   // 25m/6.4mi → 43.20
-      {when:{mMin:5.8,mMax:6.0,tMin:26,tMax:28}, d: -4.80},   // 27m/5.9mi → 42.40
-      {when:{mMin:5.5,mMax:5.7,tMin:19,tMax:21}, d: -4.00},   // 20m/5.6mi → 35.00
-      {when:{mMin:4.9,mMax:5.1,tMin:25,tMax:27}, d: -4.80},   // 26m/5.0mi → 36.20
-      {when:{mMin:4.7,mMax:4.9,tMin:26,tMax:28}, d: -3.60},   // 27m/4.8mi → 36.20
+      {when:{mMin:9.0,mMax:9.2,tMin:36,tMax:40}, d: -20.40},
+      {when:{mMin:8.5,mMax:8.7,tMin:26,tMax:30}, d: -8.80},
+      {when:{mMin:7.8,mMax:8.0,tMin:32,tMax:36}, d: -8.40},
+      {when:{mMin:6.3,mMax:6.5,tMin:23,tMax:27}, d: -5.40},
+      {when:{mMin:5.8,mMax:6.0,tMin:26,tMax:28}, d: -4.80},
+      {when:{mMin:5.5,mMax:5.7,tMin:19,tMax:21}, d: -4.00},
+      {when:{mMin:4.9,mMax:5.1,tMin:25,tMax:27}, d: -4.80},
+      {when:{mMin:4.7,mMax:4.9,tMin:26,tMax:28}, d: -3.60},
 
-      // keep your earlier trims
       {when:{mMax:0.5,tMax:5}, d:-0.60},
       {when:{mMax:0.8,tMax:5}, d:-0.40},
       {when:{mMin:1.8,mMax:2.2,tMin:9,tMax:12}, d:-1.20},
@@ -286,7 +263,7 @@ function sumOffsets(arr, miles, mins){
   return arr.reduce((s,o)=>s+(matches(o.when,miles,mins)?o.d:0),0);
 }
 
-/* ========= range builder with your global band ======== */
+/* ========= range builder ========= */
 function baseBand(miles){
   return cfg.rangeBands.find(x=>miles<=x.max) || cfg.rangeBands[cfg.rangeBands.length-1];
 }
@@ -311,19 +288,16 @@ function buildRange(core, miles, mins, rateKey){
   let lowerAdj = Math.max(b.lower.fixed, core*b.lower.pct);
   let upperAdj = Math.max(b.upper.fixed, core*b.upper.pct);
 
-  // very short (≤1.0 mi): keep tight
   if(miles<=1.0){
     lowerAdj = Math.min(lowerAdj, 1.00);
     upperAdj = Math.min(Math.max(upperAdj, 1.20), 1.80);
   }
 
-  // time-heavy short trips (≤2.5 mi & ≥15 min): widen some
   if(miles<=2.5 && mins>=15){
     lowerAdj = Math.max(lowerAdj*1.05, lowerAdj+0.30);
     upperAdj = Math.max(upperAdj*1.20, upperAdj+0.80);
   }
 
-  // long & slow (≥6 mi & ≥35 min): more upper room
   if(miles>=6 && mins>=35){
     upperAdj = Math.max(upperAdj*1.12, upperAdj+0.80);
   }
@@ -331,12 +305,10 @@ function buildRange(core, miles, mins, rateKey){
   let lower = floorTo(roundTo(core - lowerAdj, cfg.inc), cfg.inc);
   let upper = ceilTo (roundTo(core + upperAdj, cfg.inc), cfg.inc);
 
-  // apply your global tolerance
   const clamped = clampByFareSize(core, lower, upper);
   lower = clamped.lower;
   upper = clamped.upper;
 
-  // absolute floor for tiny trips
   if(miles<=0.8){
     const absFloor = 6.20;
     if(lower < absFloor) lower = roundTo(absFloor, cfg.inc);
@@ -345,7 +317,7 @@ function buildRange(core, miles, mins, rateKey){
   return {lower, upper};
 }
 
-/* ========= special long-trim ========= */
+/* ========= long trim ========= */
 function longTrim(core, trim, miles, mins){
   if(!trim||!trim.enabled) return core;
   if(!matches(trim.when,miles,mins)) return core;
@@ -354,7 +326,7 @@ function longTrim(core, trim, miles, mins){
   return roundTo(rounded - dec, cfg.inc);
 }
 
-/* ========= start/end helpers ========= */
+/* ========= start/end ========= */
 function parseTimeToMinutes(t){
   if(!t || !/^\d{2}:\d{2}$/.test(t)) return null;
   const [H,M] = t.split(':').map(Number);
@@ -377,28 +349,37 @@ function computeFromStartEnd(){
   saveForm();
 }
 
-/* ========= fare core ========= */
-function estimate(rateKey, mins, miles){
+/* ========= estimation ========= */
+/* small helper so R3 can borrow R2 */
+function estimateCore(rateKey, mins, miles){
   const r = cfg[rateKey];
   const mPart = minutePart(r.perMinute, mins);
   const perMile = pickPerMile(r.perMileRules, miles, mins);
   let core = cfg.baseFare + mPart + perMile*miles + sumOffsets(r.offsets||[], miles, mins);
 
-  // rate3 extra minute uplift for 3–7 mi, >30m (keep from older version)
-  if (rateKey==='rate3' && miles>=3 && miles<=7 && mins>30){
+  if(rateKey==='rate3' && miles>=3 && miles<=7 && mins>30){
     const k = 0.20 + 0.015*miles;
     const extra = roundTo(k * (mins - 30), cfg.inc);
     core += extra;
   }
 
   if(r.longTrim) core = longTrim(core, r.longTrim, miles, mins);
-
   core = roundTo(core, cfg.inc);
+
   const rng = buildRange(core, miles, mins, rateKey);
   return { core, lower:rng.lower, upper:rng.upper };
 }
 
-/* ========= export/log stuff ========= */
+function estimate(rateKey, mins, miles){
+  // 👇 your request: R3 copies R2 for 5mi+
+  if (rateKey === 'rate3' && miles >= 5) {
+    const r2est = estimateCore('rate2', mins, miles);
+    return r2est;
+  }
+  return estimateCore(rateKey, mins, miles);
+}
+
+/* ========= export/log ========= */
 const KEY='cabwizz_log_v1';
 function loadLog(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ return [] } }
 function saveLog(rows){ localStorage.setItem(KEY, JSON.stringify(rows)); renderLog(); }
@@ -439,7 +420,7 @@ function exportCSV(){
   a.download='cabwizz_journeys.csv'; a.click(); URL.revokeObjectURL(a.href);
 }
 
-/* ========= rate time-of-day (kept) ========= */
+/* ========= rate by time-of-day ========= */
 function rateNowLabelFor(startMinutes, weekday){
   const m = startMinutes; if(m==null) return 'Rate 1';
   const inR=(a,b)=> (m>=a && m<b); const R1='Rate 1',R2='Rate 2',R3='Rate 3';
@@ -477,7 +458,6 @@ window.addEventListener('load', ()=>{
   loadForm();
   computeFromStartEnd();
   renderLog();
-  // show version in header
   const el = document.getElementById('appVersion');
   if(el) el.textContent = APP_VERSION;
 });

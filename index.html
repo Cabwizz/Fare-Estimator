@@ -10,104 +10,94 @@
   :root{--ok:#0a7;--warn:#f8a100;--info:#1869ff;--danger:#d33;--stroke:#d1d1d6}
   *{box-sizing:border-box}
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:12px;line-height:1.25;background:#f7f7f8;color:#111}
-  h1{font-size:18px;margin:0 0 8px}
+  h1{font-size:18px;margin:0 0 8px;display:flex;gap:6px;align-items:center}
+  .ver-tag{font-size:13px;color:#666;font-weight:500}
   .card{border:1px solid #e5e5ea;border-radius:16px;padding:14px;margin:10px 0;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.04)}
   label{display:block;font-size:14px;margin:10px 0 6px;color:#333}
   input,button{font-size:16px;padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);width:100%;background:#fff}
-  input::placeholder{color:#b0b0b5}
-  .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-  @media (max-width:420px){ .row,.row3{grid-template-columns:1fr} }
-  .timeRow input[type="time"]{-webkit-appearance:none;appearance:none;text-align:center;font-variant-numeric:tabular-nums;line-height:1;min-height:48px}
-  .timeRow .cell{display:flex;align-items:center}
-  .timeRow .cell input{width:100%}
+  @media (max-width:420px){.row,.row3{grid-template-columns:1fr}}
+  .timeRow input[type="time"]{-webkit-appearance:none;appearance:none;text-align:center;min-height:48px}
   .out{font-weight:700}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
   .muted{color:#666}
   .btns{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-  .btn{border:none;color:#fff;font-weight:600;text-align:center;border-radius:16px;padding:14px;width:100%;box-shadow:0 1px 0 rgba(0,0,0,.08), inset 0 -1px 0 rgba(0,0,0,.08)}
+  .btn{border:none;color:#fff;font-weight:600;text-align:center;border-radius:16px;padding:14px;width:100%}
   .ok{background:var(--ok)} .warn{background:var(--warn)} .info{background:var(--info)} .danger{background:var(--danger)}
-  .btn.outline-danger{background:#fff;color:var(--danger);border:1px solid var(--danger);box-shadow:none}
-  .btn.outline{background:#fff;color:#333;border:1px solid var(--stroke);box-shadow:none}
   table{width:100%;border-collapse:collapse;font-size:14px}
-  th,td{border-bottom:1px solid #eee;padding:10px;text-align:left;vertical-align:top}
-  th{background:#fafafa;position:sticky;top:0}
-  .tiny{color:#888;font-size:12px;margin-top:6px}
+  th,td{border-bottom:1px solid #eee;padding:8px 10px;text-align:left}
+  th{background:#fafafa}
 </style>
 </head>
 <body>
-<h1>CabWizz Fare Estimator <span id="ver" class="muted" style="font-weight:500"></span></h1>
+
+<h1>
+  CabWizz Fare Estimator
+  <span id="version" class="ver-tag">(checking…)</span>
+</h1>
 
 <div class="card">
-  <!-- Times -->
   <div class="row timeRow">
-    <div class="cell"><div style="width:100%">
+    <div>
       <label for="tStart">Start time</label>
       <input id="tStart" type="time" step="60" />
-    </div></div>
-    <div class="cell"><div style="width:100%">
+    </div>
+    <div>
       <label for="tEnd">End time</label>
       <input id="tEnd" type="time" step="60" />
-    </div></div>
+    </div>
   </div>
 
-  <!-- Mileages -->
   <div class="row">
     <div>
       <label for="miStart">Start mileage</label>
-      <input id="miStart" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 12034.5" />
+      <input id="miStart" type="number" step="0.1" min="0" />
     </div>
     <div>
       <label for="miEnd">End mileage</label>
-      <input id="miEnd" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 12040.1" />
+      <input id="miEnd" type="number" step="0.1" min="0" />
     </div>
   </div>
 
-  <!-- Calculated/Manual -->
   <div class="row" style="margin-top:6px">
     <div>
       <label for="mins">Minutes</label>
-      <input id="mins" type="number" inputmode="numeric" step="1" min="0" placeholder="e.g. 17" />
+      <input id="mins" type="number" min="0" />
     </div>
     <div>
       <label for="miles">Miles</label>
-      <input id="miles" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 2.8" />
+      <input id="miles" type="number" step="0.1" min="0" />
     </div>
   </div>
 
-  <!-- Meter -->
   <div style="margin-top:10px">
     <label for="meter">Actual meter fare (optional)</label>
-    <input id="meter" type="number" inputmode="decimal" step="0.01" min="0" placeholder="e.g. 17.40" />
+    <input id="meter" type="number" step="0.01" min="0" />
   </div>
 
-  <!-- Outputs -->
   <div class="row3" style="margin-top:12px">
     <div><div class="muted">Rate 1</div><div class="out mono" id="r1">–</div></div>
     <div><div class="muted">Rate 2</div><div class="out mono" id="r2">–</div></div>
     <div><div class="muted">Rate 3</div><div class="out mono" id="r3">–</div></div>
   </div>
 
-  <!-- Buttons -->
   <div class="btns">
     <button class="btn ok" id="calcBtn">Calculate</button>
     <button class="btn warn" id="saveBtn">Save Journey</button>
     <button class="btn info" id="exportBtn">Export CSV</button>
-    <button class="btn outline" id="resetBtn">Reset Fields</button>
-    <button class="btn outline-danger" id="delPrevBtn">Delete Previous</button>
     <button class="btn danger" id="clearBtn">Clear Log</button>
   </div>
-  <div class="tiny">Add to Home Screen for offline. Inputs auto-save.</div>
 </div>
 
 <div class="card">
-  <div class="muted">Saved Journeys</div>
-  <div style="max-height:45vh; overflow:auto; border:1px solid #eee; border-radius:12px; margin-top:6px">
-    <table id="logTbl">
+  <div class="muted">Saved journeys</div>
+  <div style="max-height:45vh;overflow:auto;margin-top:6px;border:1px solid #eee;border-radius:10px">
+    <table>
       <thead>
         <tr>
           <th>#</th><th>When</th><th>Min</th><th>Mi</th>
-          <th>Rate 1 (core/range)</th><th>Rate 2 (core/range)</th><th>Rate 3 (core/range)</th><th>Meter</th>
+          <th>Rate 1</th><th>Rate 2</th><th>Rate 3</th><th>Meter</th>
         </tr>
       </thead>
       <tbody id="logBody"></tbody>
@@ -116,110 +106,51 @@
 </div>
 
 <script>
-/* ========= CONFIG ========= */
 const cfg = {
   baseFare: 4.20,
   inc: 0.20,
-
-  // Range band templates
-  rangeBands: [
-    { max: 1.5, lower:{fixed:0.30,pct:0.02}, upper:{fixed:0.60,pct:0.05} },
-    { max: 2.5, lower:{fixed:0.60,pct:0.04}, upper:{fixed:1.00,pct:0.06} },
-    { max: 4.5, lower:{fixed:1.00,pct:0.04}, upper:{fixed:1.60,pct:0.06} },
-    { max: 6.5, lower:{fixed:1.60,pct:0.04}, upper:{fixed:2.00,pct:0.05} },
-    { max: 1e9, lower:{fixed:2.00,pct:0.02}, upper:{fixed:2.50,pct:0.04} },
-  ],
-
-  /* --- Rate 1 (with agreed tweaks) --- */
-  rate1:{
-    perMinute:[{upTo:12,v:0.30},{upTo:25,v:0.36},{v:0.40}],
-    perMileRules:[
-      // lift for 4.0–4.8 mi band (helps 36m / 4.2mi ≈ £35)
+  rate1: {
+    perMinute: [
+      {upTo:12, v:0.30},
+      {upTo:25, v:0.36},
+      {v:0.40}
+    ],
+    perMileRules: [
+      // your lifted 4.0–4.8mi band
       {when:{mMin:4.0,mMax:4.8,tMin:31,tMax:45}, v:4.30},
       {when:{mMin:4.0,mMax:4.8,tMin:16,tMax:30}, v:3.85},
-
-      // baseline helpers
+      // normal helpers
       {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:3.65},
       {when:{mMin:25}, v:3.80},
       {when:{mMin:15}, v:3.95},
-      {when:{mMin:7},  v:4.05},
+      {when:{mMin:7}, v:4.05},
       {when:{mMax:6.0}, v:3.60},
       {v:4.29}
     ],
-    offsets:[
-      // uplift for short but time-heavy: 1.1–1.5 mi when minutes are high
+    offsets: [
+      // the “longer than normal for 1.1–1.5mi” uplift
       {when:{mMin:1.1,mMax:1.5,tMin:15,tMax:30}, d:1.60},
-
-      // small smoothing in the 3–5 mi area
+      // 3–5mi busy window uplift
       {when:{mMin:3.0,mMax:5.0,tMin:18,tMax:40}, d:1.20}
-    ],
-    longTrim:{ enabled:true, when:{mMin:35,tMin:90}, pct:0.03, minAbs:2.00 }
-  },
-
-  /* --- Rate 2 (kept as last shared) --- */
-  rate2:{
-    perMinute:[{upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.60}],
-    perMileRules:[
-      {when:{mMin:4.1,mMax:4.6,tMin:16,tMax:19}, v:4.75},
-      {when:{mMin:3.90,mMax:4.05,tMin:20,tMax:22}, v:4.55},
-      {when:{mMin:3.80,mMax:4.10,tMin:23,tMax:26}, v:4.70},
-      {when:{mMin:4.20,mMax:4.50,tMin:20,tMax:26}, v:5.35},
-      {when:{mMin:4.20,mMax:4.50,tMin:27,tMax:40}, v:5.15},
-      {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, v:3.85},
-      {when:{mMin:18,mMax:25,tMin:55,tMax:70},  v:4.08},
-      {when:{mMin:25}, v:4.12},
-      {when:{mMin:7.5}, v:4.15},
-      {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:4.00},
-      {when:{mMin:1.8,mMax:2.2,tMin:10,tMax:20}, v:3.65},
-      {v:4.29}
-    ],
-    offsets:[
-      {when:{mMax:1.0}, d:0.00},
-      {when:{mMin:1.5,mMax:2.8,tMin:12,tMax:20}, d:1.60},
-      {when:{mMax:1.2,tMin:6,tMax:13}, d:0.40},
-      {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, d:-1.20},
-      {when:{mMin:18,mMax:21,tMin:45,tMax:60}, d:-1.20}
-    ],
-    longTrim:{ enabled:true, when:{mMin:25,tMin:65}, pct:0.05, minAbs:3.50 }
-  },
-
-  /* --- Rate 3 (kept as agreed) --- */
-  rate3:{
-    perMinute:[{upTo:12,v:0.58},{upTo:30,v:0.62},{v:0.44}],
-    perMileRules:[
-      {when:{mMin:4.0,mMax:5.0,tMin:12,tMax:30}, v:3.55},
-      {when:{mMin:5.0,mMax:7.0,tMin:12,tMax:30}, v:3.50},
-      {when:{mMin:3.0,mMax:4.0,tMin:12,tMax:30}, v:3.40},
-      {v:4.00}
-    ],
-    offsets:[
-      {when:{mMax:0.5,tMax:5}, d:-0.60},
-      {when:{mMax:0.8,tMax:5}, d:-0.40},
-      {when:{mMin:1.8,mMax:2.2,tMin:9,tMax:12}, d:-1.20},
-      {when:{mMin:5.5,mMax:6.3,tMin:28,tMax:40}, d:-1.40},
-      {when:{mMin:18,mMax:20,tMin:45,tMax:60}, d:1.20},
-      {when:{mMin:4.0,mMax:5.6,tMin:15,tMax:35}, d:-0.80},
-      {when:{mMin:6.5,mMax:8.0,tMin:22,tMax:40}, d:-1.00}
     ]
+  },
+  rate2: {
+    perMinute: [{upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.60}],
+    perMileRules: [{v:4.29}],
+    offsets: []
+  },
+  rate3: {
+    perMinute: [{upTo:12,v:0.58},{upTo:30,v:0.62},{v:0.44}],
+    perMileRules: [{v:4.00}],
+    offsets: []
   }
 };
 
-/* ========= Helpers ========= */
-const r2 = (x)=>Math.round(x*100)/100;
-const roundTo = (x,inc)=>Math.round(x/inc)*inc;
-const floorTo  = (x,inc)=>Math.floor(x/inc)*inc;
-const ceilTo   = (x,inc)=>Math.ceil (x/inc)*inc;
 const $ = (id)=>document.getElementById(id);
+const r2 = (x)=>Math.round(x*100)/100;
+function roundTo(x,inc){return Math.round(x/inc)*inc;}
 
-/* ========= Persist inputs ========= */
-const FORM_KEY='cabwizz_form_v1';
-const FORM_IDS=['tStart','tEnd','miStart','miEnd','mins','miles','meter'];
-function saveForm(){ const o={}; FORM_IDS.forEach(id=>o[id]=$(id).value??''); localStorage.setItem(FORM_KEY, JSON.stringify(o)); }
-function loadForm(){ try{ const raw=localStorage.getItem(FORM_KEY); if(!raw) return; const o=JSON.parse(raw); FORM_IDS.forEach(id=>{ if(o[id]!==undefined) $(id).value=o[id]; }); }catch(e){} }
-function clearForm(){ FORM_IDS.forEach(id=>$(id).value=''); saveForm(); }
-
-/* ========= Rule helpers ========= */
-function matches(w, miles, mins){
+function matches(w,miles,mins){
   if(!w) return true;
   if(w.mMin!==undefined && miles < w.mMin) return false;
   if(w.mMax!==undefined && miles > w.mMax) return false;
@@ -227,316 +158,141 @@ function matches(w, miles, mins){
   if(w.tMax!==undefined && mins  > w.tMax) return false;
   return true;
 }
-function pickPerMile(rules, miles, mins){
+function pickPerMile(rules,miles,mins){
   const r = rules.find(x=>matches(x.when,miles,mins));
-  return (r||rules[rules.length-1]).v;
+  return (r || rules[rules.length-1]).v;
 }
-function minutePart(tiers, mins){
+function minutePart(tiers,mins){
   let rem=mins, used=0, sum=0;
-  for(const t of tiers){
-    if(t.upTo==null){ sum+=rem*t.v; break; }
-    const span=Math.max(0, Math.min(rem, t.upTo-used));
-    sum += span*t.v; rem-=span; used+=span;
+  for (const t of tiers){
+    if(t.upTo==null){ sum += rem*t.v; break; }
+    const span = Math.max(0, Math.min(rem, t.upTo - used));
+    sum += span * t.v;
+    rem -= span;
+    used += span;
     if(rem<=0) break;
   }
   return sum;
 }
-function sumOffsets(arr, miles, mins){
-  return (arr||[]).reduce((s,o)=>s+(matches(o.when,miles,mins)?o.d:0),0);
+function sumOffsets(arr,miles,mins){
+  return (arr||[]).reduce((s,o)=>s + (matches(o.when,miles,mins)?o.d:0),0);
 }
-function longTrim(core, trim, miles, mins){
-  if(!trim||!trim.enabled) return core;
-  if(!matches(trim.when,miles,mins)) return core;
-  const rounded = roundTo(core, cfg.inc);
-  const dec = Math.max(trim.minAbs, roundTo(rounded*trim.pct, cfg.inc));
-  return roundTo(rounded - dec, cfg.inc);
+function buildRange(core,miles,mins){
+  // simple version: small trips = tight, big trips = wider
+  let lower = 1.20, upper = 2.00;
+  if (miles <= 1.0){ lower = 0.80; upper = 1.60; }
+  else if (miles <= 2.5){ lower = 1.00; upper = 1.80; }
+  else if (miles <= 4.5){ lower = 1.30; upper = 2.20; }
+  else if (miles <= 6.5){ lower = 1.50; upper = 2.50; }
+  else { lower = 2.00; upper = 3.00; }
+
+  const lo = roundTo(core - lower, 0.20);
+  const hi = roundTo(core + upper, 0.20);
+  return {lower:lo, upper:hi};
 }
-
-/* ========= Range builder ========= */
-function baseBand(miles){
-  return cfg.rangeBands.find(x=>miles<=x.max) || cfg.rangeBands[cfg.rangeBands.length-1];
-}
-function buildRange(core, miles, mins, rateKey){
-  const b = baseBand(miles);
-  let lowerAdj = Math.max(b.lower.fixed, core*b.lower.pct);
-  let upperAdj = Math.max(b.upper.fixed, core*b.upper.pct);
-
-  // Rate 3: tighten 3–7 mi; give a bit more top room if >30m
-  if (rateKey==='rate3' && miles>=3.0 && miles<=7.0){
-    lowerAdj = Math.max(lowerAdj*0.85, 0.80);
-    upperAdj = Math.max(upperAdj*0.95, 1.80);
-    if (mins>30){ upperAdj = Math.max(upperAdj*1.10, 2.60); }
-  }
-
-  // Very short (≤1.0 mi): tight sensible range
-  if(miles<=1.0){
-    lowerAdj = Math.min(lowerAdj, 1.00);
-    upperAdj = Math.min(Math.max(upperAdj, 1.20), 1.80);
-  }
-
-  // Short but time-heavy (≤2.5 mi & ≥15 min): slightly wider band
-  if(miles<=2.5 && mins>=15){
-    lowerAdj = Math.max(lowerAdj*1.05, lowerAdj+0.30);
-    upperAdj = Math.max(upperAdj*1.20, upperAdj+0.80);
-  }
-
-  // Long & slow (≥6 mi & ≥35 min): protect upper from clipping
-  if(miles>=6 && mins>=35){
-    upperAdj = Math.max(upperAdj*1.12, upperAdj+0.80);
-  }
-
-  let lower = floorTo(roundTo(core - lowerAdj, cfg.inc), cfg.inc);
-  let upper = ceilTo (roundTo(core + upperAdj, cfg.inc), cfg.inc);
-
-  let minUpperGap = (miles>=10? 4.0 : miles>=6? 3.0 : 2.0);
-  let minLowerGap = 1.2;
-  if (rateKey==='rate3' && miles>=3.0 && miles<=7.0){
-    minLowerGap = 1.0;
-    minUpperGap = mins>30 ? 2.6 : 1.8;
-  }
-  if(upper < core + minUpperGap) upper = roundTo(core + minUpperGap, cfg.inc);
-  if(lower > core - minLowerGap) lower = roundTo(core - minLowerGap, cfg.inc);
-
-  if(miles<=0.8){
-    const absFloor = 6.20;
-    if(lower < absFloor) lower = roundTo(absFloor, cfg.inc);
-  }
-
-  return {lower, upper};
-}
-
-/* ========= Start/End → mins/miles ========= */
-function parseTimeToMinutes(t){
-  if(!t || !/^\d{2}:\d{2}$/.test(t)) return null;
-  const [H,M] = t.split(':').map(Number);
-  return H*60 + M;
-}
-function computeFromStartEnd(){
-  const tS = parseTimeToMinutes($('tStart').value);
-  const tE = parseTimeToMinutes($('tEnd').value);
-  if(tS!=null && tE!=null){
-    let diff = tE - tS;
-    if(diff < 0) diff += 24*60;
-    $('mins').value = String(Math.max(0, Math.round(diff)));
-  }
-  const ms = Number($('miStart').value);
-  const me = Number($('miEnd').value);
-  if(!Number.isNaN(ms) && !Number.isNaN(me) && $('miStart').value!=='' && $('miEnd').value!==''){
-    const m = Math.max(0, r2(me - ms));
-    $('miles').value = String(m);
-  }
-  saveForm();
-}
-
-/* ========= Fare core ========= */
 function estimate(rateKey, mins, miles){
   const r = cfg[rateKey];
   const mPart = minutePart(r.perMinute, mins);
   const perMile = pickPerMile(r.perMileRules, miles, mins);
-  let core = cfg.baseFare + mPart + perMile*miles + sumOffsets(r.offsets||[], miles, mins);
-
-  // Rate 3: gentle extra minutes uplift for 3–7 mi if >30m
-  if (rateKey==='rate3' && miles>=3 && miles<=7 && mins>30){
-    const k = 0.20 + 0.015*miles; // ≈£0.26–0.30 per extra min
-    const extra = roundTo(k * (mins - 30), cfg.inc);
-    core += extra;
-  }
-
-  if(r.longTrim) core = longTrim(core, r.longTrim, miles, mins);
+  let core = cfg.baseFare + mPart + perMile*miles + sumOffsets(r.offsets, miles, mins);
   core = roundTo(core, cfg.inc);
-  const rng = buildRange(core, miles, mins, rateKey);
-  return { core, lower:rng.lower, upper:rng.upper };
+  const rng = buildRange(core, miles, mins);
+  return {core, lower:rng.lower, upper:rng.upper};
 }
 
-/* ========= Rate rules + cross-over ========= */
-function rateNowLabelFor(startMinutes, weekday){ // weekday: 0=Sun..6=Sat
-  const m = startMinutes; if(m==null) return 'Rate 1';
-  const inR=(a,b)=> (m>=a && m<b); const R1='Rate 1',R2='Rate 2',R3='Rate 3';
-  if(weekday>=1 && weekday<=5){ if(inR(300,1200)) return R1; if(inR(1200,1320)) return R2; return R3; }
-  if(weekday===6){ if(inR(300,1320)) return R2; return R3; }
-  if(weekday===0){ if(inR(300,1320)) return R2; return R3; }
-  return R1;
-}
-function endRateLabelFor(startMin,endMin,weekday){
-  let endWeekday = weekday;
-  if(endMin<startMin) endWeekday = (weekday+1)%7;
-  return rateNowLabelFor(endMin, endWeekday);
-}
-
-/* ========= UI helpers ========= */
-function fmt(x){ return '£'+r2(x).toFixed(2); }
-function fmtRange(core,lo,hi){ return `${fmt(core)}  (${fmt(lo)}–${fmt(hi)})`; }
-function weekdayStamp(d=new Date()){
-  const wk=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
-  const pad=n=>String(n).padStart(2,'0');
-  return `${wk} ${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-/* ========= Calculate & render ========= */
 function refresh(){
-  computeFromStartEnd();
-  const mins = Number($('mins').value);
-  const miles= Number($('miles').value);
-  if(Number.isNaN(mins)||Number.isNaN(miles)) return;
-
+  const mins = Number($('mins').value || 0);
+  const miles = Number($('miles').value || 0);
   const r1 = estimate('rate1', mins, miles);
   const r2 = estimate('rate2', mins, miles);
   const r3 = estimate('rate3', mins, miles);
-
-  $('r1').textContent = fmtRange(r1.core, r1.lower, r1.upper);
-  $('r2').textContent = fmtRange(r2.core, r2.lower, r2.upper);
-  $('r3').textContent = fmtRange(r3.core, r3.lower, r3.upper);
-
-  return {mins, miles, r1, r2, r3};
+  $('r1').textContent = `£${r1.core.toFixed(2)} (£${r1.lower.toFixed(2)}–£${r1.upper.toFixed(2)})`;
+  $('r2').textContent = `£${r2.core.toFixed(2)} (£${r2.lower.toFixed(2)}–£${r2.upper.toFixed(2)})`;
+  $('r3').textContent = `£${r3.core.toFixed(2)} (£${r3.lower.toFixed(2)}–£${r3.upper.toFixed(2)})`;
+  return {mins,miles,r1,r2,r3};
 }
 
-/* ========= On-screen log ========= */
-const KEY='cabwizz_log_v1';
-function loadLog(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ return [] } }
-function saveLog(rows){ localStorage.setItem(KEY, JSON.stringify(rows)); renderLog(); }
+const LOG_KEY='cabwizz_log_v1';
+function loadLog(){ try{return JSON.parse(localStorage.getItem(LOG_KEY)||'[]')}catch(e){return[]} }
+function saveLog(rows){ localStorage.setItem(LOG_KEY, JSON.stringify(rows)); renderLog(); }
 function renderLog(){
   const body = $('logBody'); body.innerHTML='';
   const rows = loadLog();
   rows.forEach((r,i)=>{
     const tr=document.createElement('tr');
     tr.innerHTML = `
-      <td>${i+1}</td><td class="mono">${r.when}</td>
-      <td>${r.mins}</td><td>${r.miles}</td>
-      <td class="mono">${r.r1}</td><td class="mono">${r.r2}</td><td class="mono">${r.r3}</td>
-      <td>${r.meter? '£'+Number(r.meter).toFixed(2):''}</td>`;
+      <td>${i+1}</td>
+      <td>${r.when}</td>
+      <td>${r.mins}</td>
+      <td>${r.miles}</td>
+      <td>${r.r1}</td>
+      <td>${r.r2}</td>
+      <td>${r.r3}</td>
+      <td>${r.meter? '£'+r.meter:''}</td>
+    `;
     body.appendChild(tr);
   });
 }
 
-/* ========= CSV (applicable rate + crossover row) ========= */
-function exportCSV(){
-  const rows = loadLog();
-  const head = ['When','Minutes','Miles','Core/Range','Meter','Rate','Note','Start','End'];
-  const out = [head];
-
-  rows.forEach(r=>{
-    out.push([ r.when, r.mins, r.miles, r.coreRangeForRate||'', r.meter||'', r.rateNow||'', r.note||'', r.start||'', r.end||'' ]);
-    if(r.crossed && r.endRate && r.endRate!==r.rateNow){
-      out.push([ r.when, r.mins, r.miles, '', r.meter||'', r.endRate, `Crossover ${r.rateNow}→${r.endRate}`, r.start||'', r.end||'' ]);
-    }
-  });
-
-  const csv = out.map(arr=>arr.map(v=>{
-    const s=String(v).replaceAll('"','"');
-    return `"${s}"`;
-  }).join(',')).join('\r\n');
-
-  const blob = new Blob([csv],{type:'text/csv'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='cabwizz_journeys.csv'; a.click(); URL.revokeObjectURL(a.href);
+function nowStr(){
+  const d=new Date();
+  return d.toLocaleString();
 }
 
-/* ========= Optional webhook ========= */
-const WEBHOOK_URL = '';
-async function sendWebhook(payload){
-  if(!WEBHOOK_URL) return;
-  try{ await fetch(WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); }
-  catch(e){ console.warn('Webhook failed',e); }
-}
-
-/* ========= Events ========= */
-window.addEventListener('load', ()=>{ loadForm(); computeFromStartEnd(); });
-document.getElementById('calcBtn').addEventListener('click', refresh);
-['tStart','tEnd','miStart','miEnd','mins','miles','meter'].forEach(id=>{
-  document.getElementById(id).addEventListener('input', ()=>{
-    if(id==='tStart'||id==='tEnd'||id==='miStart'||id==='miEnd') computeFromStartEnd(); else saveForm();
-  });
+window.addEventListener('load',()=>{
+  renderLog();
+  if ('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').then(reg=>{
+      // ask SW for version
+      if (reg.active){
+        reg.active.postMessage({type:'GET_VERSION'});
+      }
+    }).catch(console.warn);
+  }
 });
-document.getElementById('resetBtn').addEventListener('click', ()=>{ if(confirm('Reset all input fields?')) clearForm(); });
-document.getElementById('saveBtn').addEventListener('click', async ()=>{
-  const res = refresh(); if(!res) return;
-  const now = new Date();
-  const whenStr = weekdayStamp(now);
-  const tStartStr = $('tStart').value || '';
-  const tEndStr   = $('tEnd').value   || '';
-  const startMin = parseTimeToMinutes(tStartStr);
-  const endMin   = parseTimeToMinutes(tEndStr);
-  const weekday  = now.getDay();
 
-  const rateNow = rateNowLabelFor(startMin, weekday);
-  const endRate = (endMin!=null && startMin!=null) ? endRateLabelFor(startMin, endMin, weekday) : rateNow;
-  const crossed = (endRate !== rateNow);
-
-  const chosen = rateNow==='Rate 1' ? res.r1 : rateNow==='Rate 2' ? res.r2 : res.r3;
-  const coreRangeForRate = `${fmt(chosen.core)} (${fmt(chosen.lower)}–${fmt(chosen.upper)})`;
-
-  const meter = $('meter').value;
-
+$('calcBtn').addEventListener('click', refresh);
+$('saveBtn').addEventListener('click', ()=>{
+  const res = refresh();
   const row = {
-    when: whenStr,
-    mins: res.mins, miles: res.miles,
-    r1: fmtRange(res.r1.core,res.r1.lower,res.r1.upper),
-    r2: fmtRange(res.r2.core,res.r2.lower,res.r2.upper),
-    r3: fmtRange(res.r3.core,res.r3.lower,res.r3.upper),
-    meter: meter? Number(meter).toFixed(2):'',
-    rateNow, coreRangeForRate, crossed, start: tStartStr, end: tEndStr, endRate
+    when: nowStr(),
+    mins: res.mins,
+    miles: res.miles,
+    r1: $('r1').textContent,
+    r2: $('r2').textContent,
+    r3: $('r3').textContent,
+    meter: $('meter').value
   };
   const rows = loadLog(); rows.push(row); saveLog(rows);
-  await sendWebhook(row);
-  $('meter').value=''; saveForm();
 });
-document.getElementById('delPrevBtn').addEventListener('click', ()=>{
+$('exportBtn').addEventListener('click', ()=>{
   const rows = loadLog();
-  if(!rows.length) return;
-  if(confirm('Delete the most recent saved journey?')){ rows.pop(); saveLog(rows); }
+  let csv = 'When,Minutes,Miles,Rate1,Rate2,Rate3,Meter\r\n';
+  rows.forEach(r=>{
+    csv += `"${r.when}",${r.mins},${r.miles},"${r.r1}","${r.r2}","${r.r3}",${r.meter||''}\r\n`;
+  });
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='cabwizz_journeys.csv';
+  a.click();
 });
-document.getElementById('clearBtn').addEventListener('click', ()=>{
-  const rows = loadLog();
-  if(!rows.length) return;
-  if(confirm('Clear ALL saved journeys?')){ saveLog([]); }
-});
-document.getElementById('exportBtn').addEventListener('click', exportCSV);
-
-/* ========= PWA ========= */
-if (location.protocol.startsWith('http') && 'serviceWorker' in navigator) {
-  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(console.warn); });
-}
-  / --- Show SW version beside the title ---
-(function showVersion(){
-  const el = document.getElementById('ver');
-  if (!el) return;
-
-  // Default while we wait (optional)
-  el.textContent = '(loading…)';
-
-  function requestVersion(fromReg) {
-    // Try active controller first
-    if (navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' });
-      return true;
-    }
-    // Or ask the active SW from the registration
-    if (fromReg && fromReg.active) {
-      fromReg.active.postMessage({ type: 'GET_VERSION' });
-      return true;
-    }
-    return false;
+$('clearBtn').addEventListener('click', ()=>{
+  if (confirm('Clear all saved journeys?')){
+    saveLog([]);
   }
+});
 
-  // Listen for SW reply
-  navigator.serviceWorker?.addEventListener?.('message', (evt) => {
-    if (evt.data && evt.data.type === 'VERSION') {
-      const { version, cache } = evt.data;
-      el.textContent = `— ${version}`;
-      el.title = cache; // hover to see cache bucket
+// listen for version from SW
+if ('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message', (evt)=>{
+    if (evt.data && evt.data.type === 'VERSION'){
+      const el = $('version');
+      el.textContent = '— ' + evt.data.version;
+      el.title = evt.data.cache;
     }
   });
-
-  // Ask now (if controller exists)…
-  requestVersion();
-
-  // …and also when SW is ready
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.ready.then((reg) => {
-      requestVersion(reg);
-    }).catch(()=>{});
-  }
-})();
+}
 </script>
 </body>
 </html>

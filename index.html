@@ -1,128 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#0a7">
-<title>CabWizz Fare Estimator (v1.7)</title>
-<style>
-  :root{--ok:#0a7;--warn:#f8a100;--info:#1869ff;--danger:#d33;--stroke:#d1d1d6}
-  *{box-sizing:border-box}
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:12px;line-height:1.25;background:#f7f7f8;color:#111}
-  h1{font-size:18px;margin:0 0 8px}
-  .version-badge{display:inline-block;font-size:11px;background:#eef;border:1px solid rgba(0,0,0,.05);padding:2px 6px;border-radius:999px;margin-left:6px;color:#1869ff}
-  .card{border:1px solid #e5e5ea;border-radius:16px;padding:14px;margin:10px 0;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.04)}
-  label{display:block;font-size:14px;margin:10px 0 6px;color:#333}
-  input,button{font-size:16px;padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);width:100%;background:#fff}
-  input::placeholder{color:#b0b0b5}
-  .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
-  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-  @media (max-width:420px){ .row,.row3{grid-template-columns:1fr} }
-  .timeRow input[type="time"]{-webkit-appearance:none;appearance:none;text-align:center;font-variant-numeric:tabular-nums;line-height:1;min-height:48px}
-  .timeRow .cell{display:flex;align-items:center}
-  .timeRow .cell input{width:100%}
-  .out{font-weight:700}
-  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-  .muted{color:#666}
-  .btns{display:flex;flex-direction:column;gap:10px;margin-top:12px}
-  .btn{border:none;color:#fff;font-weight:600;text-align:center;border-radius:16px;padding:14px;width:100%;box-shadow:0 1px 0 rgba(0,0,0,.08), inset 0 -1px 0 rgba(0,0,0,.08)}
-  .ok{background:var(--ok)} .warn{background:var(--warn)} .info{background:var(--info)} .danger{background:var(--danger)}
-  .btn.outline-danger{background:#fff;color:var(--danger);border:1px solid var(--danger);box-shadow:none}
-  .btn.outline{background:#fff;color:#333;border:1px solid var(--stroke);box-shadow:none}
-  table{width:100%;border-collapse:collapse;font-size:14px}
-  th,td{border-bottom:1px solid #eee;padding:10px;text-align:left;vertical-align:top}
-  th{background:#fafafa;position:sticky;top:0}
-  .tiny{color:#888;font-size:12px;margin-top:6px}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0a7">
+  <title>CabWizz Fare Estimator — v3.3 (R3 tuned)</title>
+  <style>
+    :root{--ok:#0a7;--warn:#f8a100;--info:#1869ff;--danger:#d33;--stroke:#d1d1d6}
+    *{box-sizing:border-box}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:12px;line-height:1.25;background:#f7f7f8;color:#111}
+    h1{font-size:18px;margin:0 0 8px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .badge{background:#e5f6ef;color:#045a36;font-size:11px;padding:2px 8px;border-radius:999px}
+    .card{border:1px solid #e5e5ea;border-radius:16px;padding:14px;margin:10px 0;background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.04)}
+    label{display:block;font-size:14px;margin:10px 0 6px;color:#333}
+    input,button{font-size:16px;padding:12px 14px;border-radius:14px;border:1px solid var(--stroke);width:100%;background:#fff}
+    input::placeholder{color:#b0b0b5}
+    .row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    @media (max-width:420px){ .row,.row3{grid-template-columns:1fr} }
+    .timeRow input[type="time"]{-webkit-appearance:none;appearance:none;text-align:center;font-variant-numeric:tabular-nums;line-height:1;min-height:48px}
+    .timeRow .cell{display:flex;align-items:center}
+    .timeRow .cell input{width:100%}
+    .out{font-weight:700}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .muted{color:#666}
+    .btns{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+    .btn{border:none;color:#fff;font-weight:600;text-align:center;border-radius:16px;padding:14px;width:100%;box-shadow:0 1px 0 rgba(0,0,0,.08), inset 0 -1px 0 rgba(0,0,0,.08)}
+    .ok{background:var(--ok)} .warn{background:var(--warn)} .info{background:var(--info)} .danger{background:var(--danger)}
+    .btn.outline-danger{background:#fff;color:var(--danger);border:1px solid var(--danger);box-shadow:none}
+    .btn.outline{background:#fff;color:#333;border:1px solid var(--stroke);box-shadow:none}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th,td{border-bottom:1px solid #eee;padding:10px;text-align:left;vertical-align:top}
+    th{background:#fafafa;position:sticky;top:0}
+    .tiny{color:#888;font-size:12px;margin-top:6px}
+  </style>
 </head>
 <body>
-<h1>CabWizz Fare Estimator <span class="version-badge">v1.7</span></h1>
+  <h1>
+    CabWizz Fare Estimator
+    <span class="badge" id="appVersion">v3.3 (R3 tuned)</span>
+  </h1>
 
-<div class="card">
-  <!-- Times -->
-  <div class="row timeRow">
-    <div class="cell"><div style="width:100%">
-      <label for="tStart">Start time</label>
-      <input id="tStart" type="time" step="60" />
-    </div></div>
-    <div class="cell"><div style="width:100%">
-      <label for="tEnd">End time</label>
-      <input id="tEnd" type="time" step="60" />
-    </div></div>
-  </div>
-
-  <!-- Mileages -->
-  <div class="row">
-    <div>
-      <label for="miStart">Start mileage</label>
-      <input id="miStart" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 12034.5" />
+  <div class="card">
+    <!-- Times -->
+    <div class="row timeRow">
+      <div class="cell"><div style="width:100%">
+        <label for="tStart">Start time</label>
+        <input id="tStart" type="time" step="60" />
+      </div></div>
+      <div class="cell"><div style="width:100%">
+        <label for="tEnd">End time</label>
+        <input id="tEnd" type="time" step="60" />
+      </div></div>
     </div>
-    <div>
-      <label for="miEnd">End mileage</label>
-      <input id="miEnd" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 12040.1" />
+
+    <!-- Mileages -->
+    <div class="row">
+      <div>
+        <label for="miStart">Start mileage</label>
+        <input id="miStart" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 12034.5" />
+      </div>
+      <div>
+        <label for="miEnd">End mileage</label>
+        <input id="miEnd" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 12040.1" />
+      </div>
+    </div>
+
+    <!-- Manual minutes/miles -->
+    <div class="row" style="margin-top:6px">
+      <div>
+        <label for="mins">Minutes</label>
+        <input id="mins" type="number" inputmode="numeric" step="1" min="0" placeholder="e.g. 17" />
+      </div>
+      <div>
+        <label for="miles">Miles</label>
+        <input id="miles" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 2.8" />
+      </div>
+    </div>
+
+    <!-- Meter -->
+    <div style="margin-top:10px">
+      <label for="meter">Actual meter fare (optional)</label>
+      <input id="meter" type="number" inputmode="decimal" step="0.01" min="0" placeholder="e.g. 17.40" />
+    </div>
+
+    <!-- Outputs -->
+    <div class="row3" style="margin-top:12px">
+      <div><div class="muted">Rate 1</div><div class="out mono" id="r1">–</div></div>
+      <div><div class="muted">Rate 2</div><div class="out mono" id="r2">–</div></div>
+      <div><div class="muted">Rate 3</div><div class="out mono" id="r3">–</div></div>
+    </div>
+
+    <!-- Buttons -->
+    <div class="btns">
+      <button class="btn ok" id="calcBtn">Calculate</button>
+      <button class="btn warn" id="saveBtn">Save Journey</button>
+      <button class="btn info" id="exportBtn">Export CSV</button>
+      <button class="btn outline" id="resetBtn">Reset Fields</button>
+      <button class="btn outline-danger" id="delPrevBtn">Delete Previous</button>
+      <button class="btn danger" id="clearBtn">Clear Log</button>
+    </div>
+    <div class="tiny">Add to Home Screen for offline. Inputs auto-save.</div>
+  </div>
+
+  <div class="card">
+    <div class="muted">Saved Journeys</div>
+    <div style="max-height:45vh; overflow:auto; border:1px solid #eee; border-radius:12px; margin-top:6px">
+      <table id="logTbl">
+        <thead>
+          <tr>
+            <th>#</th><th>When</th><th>Min</th><th>Mi</th>
+            <th>Rate 1 (core/range)</th><th>Rate 2 (core/range)</th><th>Rate 3 (core/range)</th><th>Meter</th>
+          </tr>
+        </thead>
+        <tbody id="logBody"></tbody>
+      </table>
     </div>
   </div>
-
-  <!-- Calculated/Manual fields -->
-  <div class="row" style="margin-top:6px">
-    <div>
-      <label for="mins">Minutes</label>
-      <input id="mins" type="number" inputmode="numeric" step="1" min="0" placeholder="e.g. 17" />
-    </div>
-    <div>
-      <label for="miles">Miles</label>
-      <input id="miles" type="number" inputmode="decimal" step="0.1" min="0" placeholder="e.g. 2.8" />
-    </div>
-  </div>
-
-  <!-- Meter -->
-  <div style="margin-top:10px">
-    <label for="meter">Actual meter fare (optional)</label>
-    <input id="meter" type="number" inputmode="decimal" step="0.01" min="0" placeholder="e.g. 17.40" />
-  </div>
-
-  <!-- Outputs -->
-  <div class="row3" style="margin-top:12px">
-    <div><div class="muted">Rate 1</div><div class="out mono" id="r1">–</div></div>
-    <div><div class="muted">Rate 2</div><div class="out mono" id="r2">–</div></div>
-    <div><div class="muted">Rate 3</div><div class="out mono" id="r3">–</div></div>
-  </div>
-
-  <!-- Buttons -->
-  <div class="btns">
-    <button class="btn ok" id="calcBtn">Calculate</button>
-    <button class="btn warn" id="saveBtn">Save Journey</button>
-    <button class="btn info" id="exportBtn">Export CSV</button>
-    <button class="btn outline" id="resetBtn">Reset Fields</button>
-    <button class="btn outline-danger" id="delPrevBtn">Delete Previous</button>
-    <button class="btn danger" id="clearBtn">Clear Log</button>
-  </div>
-  <div class="tiny">Add to Home Screen for offline. Inputs auto-save.</div>
-</div>
-
-<div class="card">
-  <div class="muted">Saved Journeys</div>
-  <div style="max-height:45vh; overflow:auto; border:1px solid #eee; border-radius:12px; margin-top:6px">
-    <table id="logTbl">
-      <thead>
-        <tr>
-          <th>#</th><th>When</th><th>Min</th><th>Mi</th>
-          <th>Rate 1 (core/range)</th><th>Rate 2 (core/range)</th><th>Rate 3 (core/range)</th><th>Meter</th>
-        </tr>
-      </thead>
-      <tbody id="logBody"></tbody>
-    </table>
-  </div>
-</div>
 
 <script>
-/* ========= GLOBAL CONFIG ========= */
-const APP_VERSION = 'v1.7';
+/* ========= CONFIG ========= */
+const APP_VERSION = 'v3.3 (R3 tuned)';
+
 const cfg = {
   baseFare: 4.20,
   inc: 0.20,
-  // generic range bands (we will override with tolerance bands later)
+
+  // global range bands (we'll clamp after)
   rangeBands: [
     { max: 1.5, lower:{fixed:0.30,pct:0.02}, upper:{fixed:0.60,pct:0.05} },
     { max: 2.5, lower:{fixed:0.60,pct:0.04}, upper:{fixed:1.00,pct:0.06} },
@@ -130,19 +135,14 @@ const cfg = {
     { max: 6.5, lower:{fixed:1.60,pct:0.04}, upper:{fixed:2.00,pct:0.05} },
     { max: 1e9, lower:{fixed:2.00,pct:0.02}, upper:{fixed:2.50,pct:0.04} },
   ],
-  /* ===== RATE 1 (all your latest tweaks) ===== */
+
+  /* --- Rate 1 (your last working profile, left as-is) --- */
   rate1:{
-    // minute tiers: 1–12 normal, 13–25 slightly heavier, 26+ same
     perMinute:[{upTo:12,v:0.30},{upTo:25,v:0.36},{v:0.40}],
     perMileRules:[
-      // 1.1–1.5 mi but time-heavy (your “slow 1.2” jobs)
-      {when:{mMin:1.0,mMax:1.6,tMin:13,tMax:22}, v:3.30},
-      // your 4.0–4.8 mi band that needed to land 35–39
-      {when:{mMin:4.0,mMax:4.8,tMin:31,tMax:50}, v:4.30},
+      {when:{mMin:4.0,mMax:4.8,tMin:31,tMax:45}, v:4.30},
       {when:{mMin:4.0,mMax:4.8,tMin:16,tMax:30}, v:3.85},
-      // generic helpers
       {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:3.65},
-      // long stuff (still rate 1)
       {when:{mMin:25}, v:3.80},
       {when:{mMin:15}, v:3.95},
       {when:{mMin:7},  v:4.05},
@@ -150,31 +150,20 @@ const cfg = {
       {v:4.29}
     ],
     offsets:[
-      // your 3–5 mi / 18–40 min uplift
-      {when:{mMin:3.0,mMax:5.0,tMin:18,tMax:45}, d:1.20},
-      // extra uplift for very slow short jobs 1.1–1.5 mi, ≥15 min
-      {when:{mMin:1.0,mMax:1.6,tMin:15,tMax:30}, d:1.00}
+      {when:{mMin:3.0,mMax:5.0,tMin:18,tMax:40}, d:1.20}
     ],
     longTrim:{ enabled:true, when:{mMin:35,tMin:90}, pct:0.03, minAbs:2.00 }
   },
 
-  /* ===== RATE 2 (your 1.4–1.5 mi correction + 4.0–4.6 mi correction) ===== */
+  /* --- Rate 2 (kept as last stable for now) --- */
   rate2:{
     perMinute:[{upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.60}],
     perMileRules:[
-      // NEW: 1.35–1.55 mi, 8–12 min should be ~£14–£16, we lift per-mile
-      {when:{mMin:1.35,mMax:1.55,tMin:8,tMax:12}, v:4.10},
-      // NEW: 1.35–1.55 mi, 12–16 min — slightly more
-      {when:{mMin:1.35,mMax:1.55,tMin:12,tMax:18}, v:3.95},
-
-      // previous targeted 3.9–4.6 fixes (these stay)
       {when:{mMin:4.1,mMax:4.6,tMin:16,tMax:19}, v:4.75},
       {when:{mMin:3.90,mMax:4.05,tMin:20,tMax:22}, v:4.55},
       {when:{mMin:3.80,mMax:4.10,tMin:23,tMax:26}, v:4.70},
       {when:{mMin:4.20,mMax:4.50,tMin:20,tMax:26}, v:5.35},
       {when:{mMin:4.20,mMax:4.50,tMin:27,tMax:40}, v:5.15},
-
-      // original rules
       {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, v:3.85},
       {when:{mMin:18,mMax:25,tMin:55,tMax:70},  v:4.08},
       {when:{mMin:25}, v:4.12},
@@ -193,103 +182,58 @@ const cfg = {
     longTrim:{ enabled:true, when:{mMin:25,tMin:65}, pct:0.05, minAbs:3.50 }
   },
 
-/* --- Rate 3 (reworked to match Ali's long-range figures) --- */
-rate3: {
-  // minutes part: we keep this sensible
-  // 0–12 min: faster jobs
-  // 12–30 min: normal traffic
-  // 30+ min: slightly lower/min so totals don’t explode
-  perMinute: [
-    { upTo: 12, v: 0.58 },
-    { upTo: 30, v: 0.62 },
-    { v: 0.44 }
-  ],
+  /* --- Rate 3 (UPDATED per your latest notes) --- */
+  rate3:{
+    // minutes on R3 are heavier than R1/R2
+    perMinute:[
+      {upTo:12, v:0.58},
+      {upTo:30, v:0.62},
+      {v:0.44}
+    ],
 
-  // per-mile rules – ordered from most specific → fallback
-  perMileRules: [
-    // 9.1 mi, 38 min → target ≈ £58.20
-    // we want per-mile a bit calmer here
-    { when:{ mMin: 8.8, mMax: 9.3, tMin: 35, tMax: 42 }, v: 3.05 },
+    // per-mile with special bands for 3.3–3.5 and 4.5–5.0 and long mid-distance
+    perMileRules:[
+      // 3.3–3.5, 20 min was too high → pull down
+      {when:{mMin:3.3,mMax:3.5,tMin:19,tMax:21}, v:3.15},   // target ~£27 for 3.4 @ 20m
+      // 3.3–3.5, 25 min was too low → push up
+      {when:{mMin:3.3,mMax:3.5,tMin:23,tMax:27}, v:3.55},   // target ~£32 for 3.4 @ 25m
 
-    // 8.6 mi, 28 min → £53.20
-    { when:{ mMin: 8.3, mMax: 8.8, tMin: 25, tMax: 32 }, v: 3.05 },
+      // 4.5 @ 20m should be near 33.60 → higher per-mile for this band
+      {when:{mMin:4.4,mMax:4.6,tMin:19,tMax:22}, v:3.80},
 
-    // 7.9 mi, 34 min → £51.60
-    { when:{ mMin: 7.6, mMax: 8.1, tMin: 30, tMax: 38 }, v: 3.05 },
+      // mid-long distance where yours were too high (we'll still clamp later)
+      {when:{mMin:5.5,mMax:6.5,tMin:22,tMax:30}, v:3.40},
+      {when:{mMin:6.5,mMax:8.2,tMin:25,tMax:40}, v:3.35},
+      {when:{mMin:8.2,mMax:9.5,tMin:30,tMax:45}, v:3.30},
 
-    // 6.4 mi, 25 min → £43.20
-    { when:{ mMin: 6.2, mMax: 6.6, tMin: 22, tMax: 29 }, v: 2.85 },
+      // fallbacks
+      {when:{mMin:4.0,mMax:5.0,tMin:12,tMax:30}, v:3.55},
+      {when:{mMin:5.0,mMax:7.0,tMin:12,tMax:30}, v:3.50},
+      {when:{mMin:3.0,mMax:4.0,tMin:12,tMax:30}, v:3.40},
+      {v:4.00}
+    ],
 
-    // 5.9 mi, 27 min → £42.40
-    { when:{ mMin: 5.7, mMax: 6.1, tMin: 24, tMax: 30 }, v: 2.80 },
+    // offsets for exact journeys you just gave
+    offsets:[
+      // long too-high ones → force to your meter
+      {when:{mMin:9.0,mMax:9.2,tMin:36,tMax:40}, d: -20.40},  // 38m/9.1mi: we knock down to ~58.20
+      {when:{mMin:8.5,mMax:8.7,tMin:26,tMax:30}, d: -8.80},   // 28m/8.6mi → 53.20
+      {when:{mMin:7.8,mMax:8.0,tMin:32,tMax:36}, d: -8.40},   // 34m/7.9mi → 51.60
+      {when:{mMin:6.3,mMax:6.5,tMin:23,tMax:27}, d: -5.40},   // 25m/6.4mi → 43.20
+      {when:{mMin:5.8,mMax:6.0,tMin:26,tMax:28}, d: -4.80},   // 27m/5.9mi → 42.40
+      {when:{mMin:5.5,mMax:5.7,tMin:19,tMax:21}, d: -4.00},   // 20m/5.6mi → 35.00
+      {when:{mMin:4.9,mMax:5.1,tMin:25,tMax:27}, d: -4.80},   // 26m/5.0mi → 36.20
+      {when:{mMin:4.7,mMax:4.9,tMin:26,tMax:28}, d: -3.60},   // 27m/4.8mi → 36.20
 
-    // 5.6 mi, 20 min → £35.00 (this one is quicker, so mins are lower)
-    { when:{ mMin: 5.4, mMax: 5.8, tMin: 17, tMax: 22 }, v: 2.65 },
-
-    // 5.0–5.0 @ 26 min → £36.20
-    { when:{ mMin: 4.9, mMax: 5.2, tMin: 23, tMax: 29 }, v: 2.75 },
-
-    // 4.8–4.8 @ 27 min → £36.20
-    { when:{ mMin: 4.6, mMax: 4.9, tMin: 24, tMax: 30 }, v: 2.85 },
-
-    // 4.6 mi @ 17 min → £29.60
-    { when:{ mMin: 4.5, mMax: 4.7, tMin: 15, tMax: 20 }, v: 2.70 },
-
-    // 4.5 mi @ 20 min → should be ≈ £33.60 (we’ll add an offset below)
-    { when:{ mMin: 4.4, mMax: 4.6, tMin: 19, tMax: 23 }, v: 2.65 },
-
-    // general 4.0–5.0 mi @ 12–30 min (base band)
-    { when:{ mMin: 4.0, mMax: 5.0, tMin: 12, tMax: 32 }, v: 2.95 },
-
-    // general 5.0–7.0 mi @ 12–35 min
-    { when:{ mMin: 5.0, mMax: 7.0, tMin: 12, tMax: 35 }, v: 2.90 },
-
-    // fallback for rest of R3
-    { v: 4.00 }
-  ],
-
-  // offsets – this is where we nudge to your exact meter fares
-  offsets: [
-    // 9.1 / 38 → we were too LOW after calming per-mile? bump a bit
-    { when:{ mMin: 8.8, mMax: 9.3, tMin: 35, tMax: 42 }, d: 1.20 },
-
-    // 8.6 / 28 → £53.20
-    { when:{ mMin: 8.3, mMax: 8.8, tMin: 25, tMax: 32 }, d: 0.80 },
-
-    // 7.9 / 34 → £51.60
-    { when:{ mMin: 7.6, mMax: 8.1, tMin: 30, tMax: 38 }, d: 1.00 },
-
-    // 6.4 / 25 → £43.20
-    { when:{ mMin: 6.2, mMax: 6.6, tMin: 22, tMax: 29 }, d: 0.80 },
-
-    // 5.9 / 27 → £42.40
-    { when:{ mMin: 5.7, mMax: 6.1, tMin: 24, tMax: 30 }, d: 1.00 },
-
-    // 5.6 / 20 → £35.00
-    { when:{ mMin: 5.4, mMax: 5.8, tMin: 17, tMax: 22 }, d: 0.80 },
-
-    // 5.0 / 26 → £36.20
-    { when:{ mMin: 4.9, mMax: 5.2, tMin: 23, tMax: 29 }, d: 0.80 },
-
-    // 4.8 / 27 → £36.20
-    { when:{ mMin: 4.6, mMax: 4.9, tMin: 24, tMax: 30 }, d: 0.80 },
-
-    // 4.6 / 17 → £29.60 (this one was fine-ish but let’s make it tight)
-    { when:{ mMin: 4.5, mMax: 4.7, tMin: 15, tMax: 20 }, d: 0.40 },
-
-    // 4.5 / 20 → £33.60 (you said ours was too low)
-    { when:{ mMin: 4.4, mMax: 4.6, tMin: 19, tMax: 23 }, d: 1.40 },
-
-    // short tiny R3s – keep from over-quoting when 0.4–0.8 mi + 5–7 min
-    { when:{ mMax: 0.8, tMin: 4, tMax: 8 }, d: -0.80 }
-  ],
-
-  // don’t trim R3 long jobs too hard – we just calm them a bit
-  longTrim: {
-    enabled: true,
-    when: { mMin: 9.0, tMin: 38 },
-    pct: 0.025,
-    minAbs: 1.20
+      // keep your earlier trims
+      {when:{mMax:0.5,tMax:5}, d:-0.60},
+      {when:{mMax:0.8,tMax:5}, d:-0.40},
+      {when:{mMin:1.8,mMax:2.2,tMin:9,tMax:12}, d:-1.20},
+      {when:{mMin:5.5,mMax:6.3,tMin:28,tMax:40}, d:-1.40},
+      {when:{mMin:18,mMax:20,tMin:45,tMax:60}, d:1.20},
+      {when:{mMin:4.0,mMax:5.6,tMin:15,tMax:35}, d:-0.80},
+      {when:{mMin:6.5,mMax:8.0,tMin:22,tMax:40}, d:-1.00}
+    ]
   }
 };
 
@@ -300,7 +244,7 @@ const floorTo  = (x,inc)=>Math.floor(x/inc)*inc;
 const ceilTo   = (x,inc)=>Math.ceil (x/inc)*inc;
 const $ = (id)=>document.getElementById(id);
 
-/* ========= Persist inputs ========= */
+/* ========= persist ========= */
 const FORM_KEY='cabwizz_form_v1';
 const FORM_IDS=['tStart','tEnd','miStart','miEnd','mins','miles','meter'];
 function saveForm(){ const o={}; FORM_IDS.forEach(id=>o[id]=$(id).value??''); localStorage.setItem(FORM_KEY, JSON.stringify(o)); }
@@ -333,6 +277,67 @@ function minutePart(tiers, mins){
 function sumOffsets(arr, miles, mins){
   return arr.reduce((s,o)=>s+(matches(o.when,miles,mins)?o.d:0),0);
 }
+
+/* ========= range builder with your global band ======== */
+function baseBand(miles){
+  return cfg.rangeBands.find(x=>miles<=x.max) || cfg.rangeBands[cfg.rangeBands.length-1];
+}
+function clampByFareSize(core, lower, upper){
+  if(core <= 20){
+    lower = Math.min(lower, core - 1.00);
+    upper = Math.max(upper, core + 1.00);
+  } else if(core <= 40){
+    lower = Math.min(lower, core - 1.20);
+    upper = Math.max(upper, core + 1.20);
+  } else if(core <= 60){
+    lower = Math.min(lower, core - 1.40);
+    upper = Math.max(upper, core + 1.40);
+  } else {
+    lower = Math.min(lower, core - 1.60);
+    upper = Math.max(upper, core + 1.60);
+  }
+  return {lower, upper};
+}
+function buildRange(core, miles, mins, rateKey){
+  const b = baseBand(miles);
+  let lowerAdj = Math.max(b.lower.fixed, core*b.lower.pct);
+  let upperAdj = Math.max(b.upper.fixed, core*b.upper.pct);
+
+  // very short (≤1.0 mi): keep tight
+  if(miles<=1.0){
+    lowerAdj = Math.min(lowerAdj, 1.00);
+    upperAdj = Math.min(Math.max(upperAdj, 1.20), 1.80);
+  }
+
+  // time-heavy short trips (≤2.5 mi & ≥15 min): widen some
+  if(miles<=2.5 && mins>=15){
+    lowerAdj = Math.max(lowerAdj*1.05, lowerAdj+0.30);
+    upperAdj = Math.max(upperAdj*1.20, upperAdj+0.80);
+  }
+
+  // long & slow (≥6 mi & ≥35 min): more upper room
+  if(miles>=6 && mins>=35){
+    upperAdj = Math.max(upperAdj*1.12, upperAdj+0.80);
+  }
+
+  let lower = floorTo(roundTo(core - lowerAdj, cfg.inc), cfg.inc);
+  let upper = ceilTo (roundTo(core + upperAdj, cfg.inc), cfg.inc);
+
+  // apply your global tolerance
+  const clamped = clampByFareSize(core, lower, upper);
+  lower = clamped.lower;
+  upper = clamped.upper;
+
+  // absolute floor for tiny trips
+  if(miles<=0.8){
+    const absFloor = 6.20;
+    if(lower < absFloor) lower = roundTo(absFloor, cfg.inc);
+  }
+
+  return {lower, upper};
+}
+
+/* ========= special long-trim ========= */
 function longTrim(core, trim, miles, mins){
   if(!trim||!trim.enabled) return core;
   if(!matches(trim.when,miles,mins)) return core;
@@ -341,28 +346,7 @@ function longTrim(core, trim, miles, mins){
   return roundTo(rounded - dec, cfg.inc);
 }
 
-/* ========= range by your tolerance ========= */
-function buildRangeFromTolerance(core){
-  let lower = core, upper = core;
-  if (core <= 20){
-    lower = core - 1.00;
-    upper = core + 1.00;
-  } else if (core <= 40){
-    lower = core - 1.20;
-    upper = core + 1.20;
-  } else if (core <= 60){
-    lower = core - 1.40;
-    upper = core + 1.40;
-  } else {
-    lower = core - 1.60;
-    upper = core + 1.60;
-  }
-  lower = floorTo(lower, cfg.inc);
-  upper = ceilTo (upper, cfg.inc);
-  return {lower, upper};
-}
-
-/* ========= Start/End → mins/miles ========= */
+/* ========= start/end helpers ========= */
 function parseTimeToMinutes(t){
   if(!t || !/^\d{2}:\d{2}$/.test(t)) return null;
   const [H,M] = t.split(':').map(Number);
@@ -385,31 +369,70 @@ function computeFromStartEnd(){
   saveForm();
 }
 
-/* ========= Fare core ========= */
+/* ========= fare core ========= */
 function estimate(rateKey, mins, miles){
   const r = cfg[rateKey];
   const mPart = minutePart(r.perMinute, mins);
   const perMile = pickPerMile(r.perMileRules, miles, mins);
   let core = cfg.baseFare + mPart + perMile*miles + sumOffsets(r.offsets||[], miles, mins);
 
-  // RATE 3: extra minute-lift after 30 min for 3–7 mi (kept from previous version)
+  // rate3 extra minute uplift for 3–7 mi, >30m (keep from older version)
   if (rateKey==='rate3' && miles>=3 && miles<=7 && mins>30){
-    const k = 0.20 + 0.015*miles; // ≈£0.26–0.30 per extra min
+    const k = 0.20 + 0.015*miles;
     const extra = roundTo(k * (mins - 30), cfg.inc);
     core += extra;
   }
 
   if(r.longTrim) core = longTrim(core, r.longTrim, miles, mins);
+
   core = roundTo(core, cfg.inc);
-
-  // final range = your 1.00 / 1.20 / 1.40 / 1.60 rule
-  const rng = buildRangeFromTolerance(core);
-
+  const rng = buildRange(core, miles, mins, rateKey);
   return { core, lower:rng.lower, upper:rng.upper };
 }
 
-/* ========= Rate rules + cross-over (kept same) ========= */
-function rateNowLabelFor(startMinutes, weekday){ // weekday: 0=Sun..6=Sat
+/* ========= export/log stuff ========= */
+const KEY='cabwizz_log_v1';
+function loadLog(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ return [] } }
+function saveLog(rows){ localStorage.setItem(KEY, JSON.stringify(rows)); renderLog(); }
+function renderLog(){
+  const body = $('logBody'); body.innerHTML='';
+  const rows = loadLog();
+  rows.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML = `
+      <td>${i+1}</td><td class="mono">${r.when}</td>
+      <td>${r.mins}</td><td>${r.miles}</td>
+      <td class="mono">${r.r1}</td><td class="mono">${r.r2}</td><td class="mono">${r.r3}</td>
+      <td>${r.meter? '£'+Number(r.meter).toFixed(2):''}</td>`;
+    body.appendChild(tr);
+  });
+}
+function weekdayStamp(d=new Date()){
+  const wk=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+  const pad=n=>String(n).padStart(2,'0');
+  return `${wk} ${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function fmt(x){ return '£'+r2(x).toFixed(2); }
+function fmtRange(core,lo,hi){ return `${fmt(core)}  (${fmt(lo)}–${fmt(hi)})`; }
+
+function exportCSV(){
+  const rows = loadLog();
+  const head = ['When','Minutes','Miles','Core/Range','Meter','Rate','Note','Start','End'];
+  const out = [head];
+  rows.forEach(r=>{
+    out.push([ r.when, r.mins, r.miles, r.coreRangeForRate||'', r.meter||'', r.rateNow||'', r.note||'', r.start||'', r.end||'' ]);
+    if(r.crossed && r.endRate && r.endRate!==r.rateNow){
+      out.push([ r.when, r.mins, r.miles, '', r.meter||'', r.endRate, `Crossover ${r.rateNow}→${r.endRate}`, r.start||'', r.end||'' ]);
+    }
+  });
+  const csv = out.map(arr=>arr.map(v=>`"${String(v).replaceAll('"','""')}"`).join(',')).join('\r\n');
+  const blob = new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='cabwizz_journeys.csv'; a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ========= rate time-of-day (kept) ========= */
+function rateNowLabelFor(startMinutes, weekday){
   const m = startMinutes; if(m==null) return 'Rate 1';
   const inR=(a,b)=> (m>=a && m<b); const R1='Rate 1',R2='Rate 2',R3='Rate 3';
   if(weekday>=1 && weekday<=5){ if(inR(300,1200)) return R1; if(inR(1200,1320)) return R2; return R3; }
@@ -423,16 +446,7 @@ function endRateLabelFor(startMin,endMin,weekday){
   return rateNowLabelFor(endMin, endWeekday);
 }
 
-/* ========= UI helpers ========= */
-function fmt(x){ return '£'+r2(x).toFixed(2); }
-function fmtRange(core,lo,hi){ return `${fmt(core)}  (${fmt(lo)}–${fmt(hi)})`; }
-function weekdayStamp(d=new Date()){
-  const wk=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
-  const pad=n=>String(n).padStart(2,'0');
-  return `${wk} ${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-/* ========= Calculate & render ========= */
+/* ========= calculate & render ========= */
 function refresh(){
   computeFromStartEnd();
   const mins = Number($('mins').value);
@@ -450,56 +464,15 @@ function refresh(){
   return {mins, miles, r1, r2, r3};
 }
 
-/* ========= On-screen log ========= */
-const KEY='cabwizz_log_v1';
-function loadLog(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ return [] } }
-function saveLog(rows){ localStorage.setItem(KEY, JSON.stringify(rows)); renderLog(); }
-function renderLog(){
-  const body = $('logBody'); body.innerHTML='';
-  const rows = loadLog();
-  rows.forEach((r,i)=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML = `
-      <td>${i+1}</td><td class="mono">${r.when}</td>
-      <td>${r.mins}</td><td>${r.miles}</td>
-      <td class="mono">${r.r1}</td><td class="mono">${r.r2}</td><td class="mono">${r.r3}</td>
-      <td>${r.meter? '£'+Number(r.meter).toFixed(2):''}</td>`;
-    body.appendChild(tr);
-  });
-}
-
-/* ========= CSV ========= */
-function exportCSV(){
-  const rows = loadLog();
-  const head = ['When','Minutes','Miles','Core/Range','Meter','Rate','Note','Start','End','AppVersion'];
-  const out = [head];
-
-  rows.forEach(r=>{
-    out.push([ r.when, r.mins, r.miles, r.coreRangeForRate||'', r.meter||'', r.rateNow||'', r.note||'', r.start||'', r.end||'', APP_VERSION ]);
-    if(r.crossed && r.endRate && r.endRate!==r.rateNow){
-      out.push([ r.when, r.mins, r.miles, '', r.meter||'', r.endRate, `Crossover ${r.rateNow}→${r.endRate}`, r.start||'', r.end||'', APP_VERSION ]);
-    }
-  });
-
-  const csv = out.map(arr=>arr.map(v=>{
-    const s=String(v).replaceAll('"','""'); return `"${s}"`;
-  }).join(',')).join('\r\n');
-
-  const blob = new Blob([csv],{type:'text/csv'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='cabwizz_journeys.csv'; a.click(); URL.revokeObjectURL(a.href);
-}
-
-/* ========= Optional webhook ========= */
-const WEBHOOK_URL = '';
-async function sendWebhook(payload){
-  if(!WEBHOOK_URL) return;
-  try{ await fetch(WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); }
-  catch(e){ console.warn('Webhook failed',e); }
-}
-
-/* ========= Events ========= */
-window.addEventListener('load', ()=>{ loadForm(); computeFromStartEnd(); renderLog(); });
+/* ========= events ========= */
+window.addEventListener('load', ()=>{
+  loadForm();
+  computeFromStartEnd();
+  renderLog();
+  // show version in header
+  const el = document.getElementById('appVersion');
+  if(el) el.textContent = APP_VERSION;
+});
 document.getElementById('calcBtn').addEventListener('click', refresh);
 ['tStart','tEnd','miStart','miEnd','mins','miles','meter'].forEach(id=>{
   document.getElementById(id).addEventListener('input', ()=>{
@@ -533,11 +506,9 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
     r2: fmtRange(res.r2.core,res.r2.lower,res.r2.upper),
     r3: fmtRange(res.r3.core,res.r3.lower,res.r3.upper),
     meter: meter? Number(meter).toFixed(2):'',
-    rateNow, coreRangeForRate, crossed, start: tStartStr, end: tEndStr, endRate,
-    note:'', version: APP_VERSION
+    rateNow, coreRangeForRate, crossed, start: tStartStr, end: tEndStr, endRate
   };
   const rows = loadLog(); rows.push(row); saveLog(rows);
-  await sendWebhook(row);
   $('meter').value=''; saveForm();
 });
 document.getElementById('delPrevBtn').addEventListener('click', ()=>{
@@ -554,7 +525,9 @@ document.getElementById('exportBtn').addEventListener('click', exportCSV);
 
 /* ========= PWA ========= */
 if (location.protocol.startsWith('http') && 'serviceWorker' in navigator) {
-  window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(console.warn); });
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(console.warn);
+  });
 }
 </script>
 </body>

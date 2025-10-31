@@ -36,7 +36,7 @@
 </style>
 </head>
 <body>
-<h1>CabWizz Fare Estimator</h1>
+<h1>CabWizz Fare Estimator <span id="ver" class="muted" style="font-weight:500"></span></h1>
 
 <div class="card">
   <!-- Times -->
@@ -496,6 +496,47 @@ document.getElementById('exportBtn').addEventListener('click', exportCSV);
 if (location.protocol.startsWith('http') && 'serviceWorker' in navigator) {
   window.addEventListener('load', ()=>{ navigator.serviceWorker.register('sw.js').catch(console.warn); });
 }
+  / --- Show SW version beside the title ---
+(function showVersion(){
+  const el = document.getElementById('ver');
+  if (!el) return;
+
+  // Default while we wait (optional)
+  el.textContent = '(loading…)';
+
+  function requestVersion(fromReg) {
+    // Try active controller first
+    if (navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'GET_VERSION' });
+      return true;
+    }
+    // Or ask the active SW from the registration
+    if (fromReg && fromReg.active) {
+      fromReg.active.postMessage({ type: 'GET_VERSION' });
+      return true;
+    }
+    return false;
+  }
+
+  // Listen for SW reply
+  navigator.serviceWorker?.addEventListener?.('message', (evt) => {
+    if (evt.data && evt.data.type === 'VERSION') {
+      const { version, cache } = evt.data;
+      el.textContent = `— ${version}`;
+      el.title = cache; // hover to see cache bucket
+    }
+  });
+
+  // Ask now (if controller exists)…
+  requestVersion();
+
+  // …and also when SW is ready
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then((reg) => {
+      requestVersion(reg);
+    }).catch(()=>{});
+  }
+})();
 </script>
 </body>
 </html>

@@ -182,35 +182,43 @@ const cfg = {
     longTrim:{ enabled:true, when:{mMin:25,tMin:65}, pct:0.05, minAbs:3.50 }
   },
 
-  /* --- Rate 3 (UPDATED per your latest notes) --- */
-  rate3:{
-    // minutes on R3 are heavier than R1/R2
-    perMinute:[
-      {upTo:12, v:0.58},
-      {upTo:30, v:0.62},
-      {v:0.44}
+  /* --- RATE 3 (corrected with Ali’s long-band trims) --- */
+  rate3: {
+    // minutes on R3 are a bit heavier than R1/R2 but we keep your base shape
+    // 0–12m = 0.58, 12–30m = 0.62, 30m+ = 0.44 (we’ll trim long ones below)
+    perMinute: [
+      { upTo: 12, v: 0.58 },
+      { upTo: 30, v: 0.62 },
+      { v: 0.44 }
     ],
 
-    // per-mile with special bands for 3.3–3.5 and 4.5–5.0 and long mid-distance
-    perMileRules:[
-      // 3.3–3.5, 20 min was too high → pull down
-      {when:{mMin:3.3,mMax:3.5,tMin:19,tMax:21}, v:3.15},   // target ~£27 for 3.4 @ 20m
-      // 3.3–3.5, 25 min was too low → push up
-      {when:{mMin:3.3,mMax:3.5,tMin:23,tMax:27}, v:3.55},   // target ~£32 for 3.4 @ 25m
+    // per-mile rules
+    perMileRules: [
+      // 1) KEEP the good 3.3–3.5 region (you said 16m @ 3.4 came out nice)
+      { when: { mMin: 3.3, mMax: 3.6, tMin: 14, tMax: 22 }, v: 3.55 },
+      { when: { mMin: 3.3, mMax: 3.6, tMin: 23, tMax: 28 }, v: 3.60 },
 
-      // 4.5 @ 20m should be near 33.60 → higher per-mile for this band
-      {when:{mMin:4.4,mMax:4.6,tMin:19,tMax:22}, v:3.80},
+      // 2) 4.5–5.0 mi, 18–30m → we want ~£33–36 (20m@4.5 should be £33.60)
+      { when: { mMin: 4.5, mMax: 5.0, tMin: 16, tMax: 22 }, v: 3.70 },
+      { when: { mMin: 4.5, mMax: 5.0, tMin: 23, tMax: 32 }, v: 3.55 },
 
-      // mid-long distance where yours were too high (we'll still clamp later)
-      {when:{mMin:5.5,mMax:6.5,tMin:22,tMax:30}, v:3.40},
-      {when:{mMin:6.5,mMax:8.2,tMin:25,tMax:40}, v:3.35},
-      {when:{mMin:8.2,mMax:9.5,tMin:30,tMax:45}, v:3.30},
+      // 3) 5.0–6.0 mi, 20–30m → cap to match 26m@5.0 ≈ £36.20, 27m@5.9 ≈ £42.40
+      { when: { mMin: 5.0, mMax: 6.0, tMin: 18, tMax: 24 }, v: 3.45 },
+      { when: { mMin: 5.0, mMax: 6.0, tMin: 25, tMax: 34 }, v: 3.38 },
 
-      // fallbacks
-      {when:{mMin:4.0,mMax:5.0,tMin:12,tMax:30}, v:3.55},
-      {when:{mMin:5.0,mMax:7.0,tMin:12,tMax:30}, v:3.50},
-      {when:{mMin:3.0,mMax:4.0,tMin:12,tMax:30}, v:3.40},
-      {v:4.00}
+      // 4) 6.0–6.6 mi, 24–32m → we saw 25m@6.4 = £43.20
+      { when: { mMin: 6.0, mMax: 6.6, tMin: 22, tMax: 32 }, v: 3.35 },
+
+      // 5) 7.5–9.5 mi, 28–42m → your meter said:
+      //    34m @ 7.9 → £51.60
+      //    28m @ 8.6 → £53.20
+      //    38m @ 9.1 → £58.20
+      // so we LOWER the per-mile here
+      { when: { mMin: 7.5, mMax: 9.5, tMin: 26, tMax: 36 }, v: 3.25 },
+      { when: { mMin: 7.5, mMax: 9.5, tMin: 37, tMax: 46 }, v: 3.10 },
+
+      // fallback
+      { v: 4.00 }
     ],
 
     // offsets for exact journeys you just gave

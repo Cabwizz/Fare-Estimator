@@ -3,177 +3,212 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>CabWizz Fare Batch Tester</title>
+<title>Rate-1 Batch Tester & Tuner</title>
 <style>
-  :root{--ok:#0a7;--warn:#f8a100;--danger:#d33;--stroke:#d1d1d6}
-  *{box-sizing:border-box}
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f7f7f8;color:#111;margin:16px}
-  h1{font-size:18px;margin:0 0 12px}
-  .grid{display:grid;grid-template-columns:1fr;gap:12px}
-  .card{background:#fff;border:1px solid #e5e5ea;border-radius:14px;padding:14px}
-  textarea{width:100%;min-height:160px;font-family:ui-monospace,Menlo,Consolas,monospace;border:1px solid var(--stroke);border-radius:12px;padding:10px}
-  select,input,button{font-size:15px;padding:10px;border-radius:12px;border:1px solid var(--stroke);background:#fff}
-  .row{display:flex;flex-wrap:wrap;gap:10px}
-  .btn{border:none;color:#fff;background:var(--ok);font-weight:600;cursor:pointer}
-  .btn.warn{background:var(--warn)} .btn.danger{background:var(--danger)}
-  table{width:100%;border-collapse:collapse;font-size:14px}
-  th,td{border-bottom:1px solid #eee;padding:8px;text-align:left}
-  th{background:#fafafa;position:sticky;top:0}
-  .mono{font-family:ui-monospace,Menlo,Consolas,monospace}
-  .tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px}
-  .in{background:#e8f7ee;color:#045a36} .out{background:#fdeaea;color:#8a1f11}
-  .muted{color:#666}
+  :root{--ok:#0a7;--warn:#f8a100;--info:#1869ff;--danger:#d33;--stroke:#ddd}
+  *{box-sizing:border-box} body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#f7f7f8;color:#111;margin:12px}
+  h1{font-size:18px;margin:0 0 10px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:#fff;border:1px solid #e5e5ea;border-radius:14px;padding:14px;box-shadow:0 1px 0 rgba(0,0,0,.04)}
+  textarea,input,select,button{width:100%;font-size:14px;padding:10px;border:1px solid var(--stroke);border-radius:10px;background:#fff}
+  label{font-size:13px;color:#333;margin-top:8px;display:block}
+  .row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .row2{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .btn{border:none;color:#fff;background:#0a7;padding:12px;border-radius:12px;font-weight:600;cursor:pointer}
+  .btn.secondary{background:#1869ff}
+  .btn.warn{background:#f8a100}
+  .btn.danger{background:#d33}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{border-bottom:1px solid #eee;padding:8px 6px;text-align:right}
+  th:first-child,td:first-child{text-align:left}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .muted{color:#666;font-size:12px}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;background:#eafaf3;color:#05603a;font-size:11px;margin-left:6px}
+  .bad{background:#fff3f3;color:#a10000}
+  .okval{color:#05603a}
+  .small{font-size:12px}
 </style>
 </head>
 <body>
-<h1>CabWizz Fare Batch Tester</h1>
+<h1>Rate-1 Batch Tester & Tuner <span class="pill" id="ver">v1.0</span></h1>
 
 <div class="grid">
+  <!-- LEFT: data + controls -->
   <div class="card">
-    <div class="row">
-      <div>
-        <label>Which rate to test?</label><br/>
-        <select id="rateSel">
-          <option value="rate1">Rate 1</option>
-          <option value="rate2">Rate 2</option>
-          <option value="rate3">Rate 3 (uses Rate 2 logic for 5+ mi)</option>
-        </select>
-      </div>
-      <div>
-        <label>Has header row?</label><br/>
-        <select id="hasHeader">
-          <option value="yes">Yes (minutes,miles[,meter])</option>
-          <option value="no">No</option>
-        </select>
-      </div>
-      <div class="row" style="align-items:end">
-        <button class="btn" id="runBtn">Run Test</button>
-        <button class="btn warn" id="exportBtn">Export Results CSV</button>
-        <button class="btn danger" id="clearBtn">Clear</button>
-      </div>
+    <h3 style="margin:0 0 8px">Paste your dataset</h3>
+    <div class="muted" style="margin-bottom:6px">
+      One row per journey, **comma or tab separated**: <span class="mono">minutes, miles, meter</span> (headers optional).<br>
+      Example: <span class="mono">14, 1.9, 16.20</span>
     </div>
-    <div class="muted" style="margin-top:8px">
-      Paste rows as: <span class="mono">minutes,miles[,meter]</span> — meter is optional.
+    <textarea id="data" rows="10" placeholder="minutes,miles,meter
+14,1.9,16.20
+17,1.9,18.60
+18,1.9,17.60
+23,2.9,23.20"></textarea>
+    <div class="row2" style="margin-top:8px">
+      <button class="btn" id="runBtn">Test Run</button>
+      <button class="btn secondary" id="exportBtn">Export Results (CSV)</button>
     </div>
-    <textarea id="inp" placeholder="minutes,miles,meter&#10;12,1.7,14.20&#10;25,3.4,25.60&#10;38,9.1,58.20"></textarea>
+    <div class="row2" style="margin-top:8px">
+      <button class="btn warn" id="saveCfgBtn">Copy JS Snippet (paste into estimator)</button>
+      <button class="btn danger" id="clearBtn">Clear</button>
+    </div>
   </div>
 
+  <!-- RIGHT: tunables -->
   <div class="card">
-    <div id="summary" class="muted">No results yet.</div>
-    <div style="max-height:60vh;overflow:auto;margin-top:10px">
-      <table id="tbl">
-        <thead>
-          <tr>
-            <th>#</th><th>Min</th><th>Mi</th>
-            <th>Core</th><th>Range</th>
-            <th>Meter</th><th>Δ (Core−Meter)</th><th>Within Range?</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
+    <h3 style="margin:0 0 8px">Tune Rate-1 parameters</h3>
+    <div class="row2">
+      <div>
+        <label>Base fare (£)</label>
+        <input id="p_base" type="number" step="0.01" value="4.20">
+      </div>
+      <div>
+        <label>Rounding increment (£)</label>
+        <input id="p_inc" type="number" step="0.10" value="0.20">
+      </div>
+    </div>
+
+    <h4 style="margin:10px 0 6px">Per-minute tiers</h4>
+    <div class="row3">
+      <div>
+        <label>0–12 min (£/min)</label>
+        <input id="pm0" type="number" step="0.01" value="0.30">
+      </div>
+      <div>
+        <label>12–25 min (£/min)</label>
+        <input id="pm1" type="number" step="0.01" value="0.36">
+      </div>
+      <div>
+        <label>25+ min (£/min)</label>
+        <input id="pm2" type="number" step="0.01" value="0.40">
+      </div>
+    </div>
+
+    <h4 style="margin:10px 0 6px">Per-mile rules (choose one by range)</h4>
+    <div class="muted small">These mimic your live estimator’s Rate-1 per-mile map. Adjust values only.</div>
+    <div class="row">
+      <div>
+        <label>m &lt;= 6.0</label>
+        <input id="pp_mle6" type="number" step="0.01" value="3.60">
+      </div>
+      <div>
+        <label>7–14 min</label>
+        <input id="pp_7" type="number" step="0.01" value="4.05">
+      </div>
+      <div>
+        <label>15–24 min</label>
+        <input id="pp_15" type="number" step="0.01" value="3.95">
+      </div>
+      <div>
+        <label>25+ min</label>
+        <input id="pp_25" type="number" step="0.01" value="3.80">
+      </div>
+    </div>
+    <div class="row" style="margin-top:6px">
+      <div>
+        <label>3.5–4.5 mi &amp; 16–30 min</label>
+        <input id="pp_35_45" type="number" step="0.01" value="3.65">
+      </div>
+      <div>
+        <label>4.0–4.8 mi &amp; 16–30 min</label>
+        <input id="pp_40_48_mid" type="number" step="0.01" value="3.85">
+      </div>
+      <div>
+        <label>4.0–4.8 mi &amp; 31–45 min</label>
+        <input id="pp_40_48_high" type="number" step="0.01" value="4.30">
+      </div>
+      <div>
+        <label>Fallback per-mile</label>
+        <input id="pp_fallback" type="number" step="0.01" value="4.29">
+      </div>
+    </div>
+
+    <h4 style="margin:10px 0 6px">Offsets</h4>
+    <div class="muted small">Add/subtract for specific pockets (kept simple: one common offset).</div>
+    <div class="row2">
+      <div>
+        <label>Offset (m: 3–5, t: 18–40)</label>
+        <input id="off_common" type="number" step="0.20" value="1.20">
+      </div>
+      <div>
+        <label>Long-trip trim (%) after 90m &amp; 35mi</label>
+        <input id="trim_pct" type="number" step="0.01" value="0.03">
+      </div>
+    </div>
+
+    <h4 style="margin:10px 6px 6px">Range rules (global clamp)</h4>
+    <div class="row">
+      <div><label>£6–£20 (±)</label><input id="rg_20" type="number" step="0.10" value="1.00"></div>
+      <div><label>£20–£40 (±)</label><input id="rg_40" type="number" step="0.10" value="1.20"></div>
+      <div><label>£40–£60 (±)</label><input id="rg_60" type="number" step="0.10" value="1.40"></div>
+      <div><label>£60+ (±)</label><input id="rg_80" type="number" step="0.10" value="1.60"></div>
     </div>
   </div>
 </div>
 
+<!-- RESULTS -->
+<div class="card" style="margin-top:12px">
+  <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+    <h3 style="margin:0">Results</h3>
+    <div class="muted">MAE: <span id="mae" class="mono okval">–</span> | MAPE: <span id="mape" class="mono okval">–</span> | RMSE: <span id="rmse" class="mono okval">–</span></div>
+  </div>
+  <div style="max-height:60vh;overflow:auto;border:1px solid #eee;border-radius:12px;margin-top:6px">
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th>#</th><th>Min</th><th>Mi</th>
+          <th>Meter</th><th>Core</th><th>Low</th><th>High</th><th>Error</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+</div>
+
 <script>
-/* === same core config & estimator as the current app (v3.4) === */
-const cfg = {
-  baseFare: 4.20,
-  inc: 0.20,
-  rangeBands: [
-    { max: 1.5, lower:{fixed:0.30,pct:0.02}, upper:{fixed:0.60,pct:0.05} },
-    { max: 2.5, lower:{fixed:0.60,pct:0.04}, upper:{fixed:1.00,pct:0.06} },
-    { max: 4.5, lower:{fixed:1.00,pct:0.04}, upper:{fixed:1.60,pct:0.06} },
-    { max: 6.5, lower:{fixed:1.60,pct:0.04}, upper:{fixed:2.00,pct:0.05} },
-    { max: 1e9, lower:{fixed:2.00,pct:0.02}, upper:{fixed:2.50,pct:0.04} },
-  ],
-  rate1:{
-    perMinute:[{upTo:12,v:0.30},{upTo:25,v:0.36},{v:0.40}],
-    perMileRules:[
-      {when:{mMin:4.0,mMax:4.8,tMin:31,tMax:45}, v:4.30},
-      {when:{mMin:4.0,mMax:4.8,tMin:16,tMax:30}, v:3.85},
-      {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:3.65},
-      {when:{mMin:25}, v:3.80},
-      {when:{mMin:15}, v:3.95},
-      {when:{mMin:7},  v:4.05},
-      {when:{mMax:6.0}, v:3.60},
-      {v:4.29}
-    ],
-    offsets:[
-      {when:{mMin:3.0,mMax:5.0,tMin:18,tMax:40}, d:1.20}
-    ],
-    longTrim:{ enabled:true, when:{mMin:35,tMin:90}, pct:0.03, minAbs:2.00 }
-  },
-  rate2:{
-    perMinute:[{upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.60}],
-    perMileRules:[
-      {when:{mMin:4.1,mMax:4.6,tMin:16,tMax:19}, v:4.75},
-      {when:{mMin:3.90,mMax:4.05,tMin:20,tMax:22}, v:4.55},
-      {when:{mMin:3.80,mMax:4.10,tMin:23,tMax:26}, v:4.70},
-      {when:{mMin:4.20,mMax:4.50,tMin:20,tMax:26}, v:5.35},
-      {when:{mMin:4.20,mMax:4.50,tMin:27,tMax:40}, v:5.15},
-      {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, v:3.85},
-      {when:{mMin:18,mMax:25,tMin:55,tMax:70},  v:4.08},
-      {when:{mMin:25}, v:4.12},
-      {when:{mMin:7.5}, v:4.15},
-      {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:4.00},
-      {when:{mMin:1.8,mMax:2.2,tMin:10,tMax:20}, v:3.65},
-      {v:4.29}
-    ],
-    offsets:[
-      {when:{mMax:1.0}, d:0.00},
-      {when:{mMin:1.5,mMax:2.8,tMin:12,tMax:20}, d:1.60},
-      {when:{mMax:1.2,tMin:6,tMax:13}, d:0.40},
-      {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, d:-1.20},
-      {when:{mMin:18,mMax:21,tMin:45,tMax:60}, d:-1.20}
-    ],
-    longTrim:{ enabled:true, when:{mMin:25,tMin:65}, pct:0.05, minAbs:3.50 }
-  },
-  // Rate 3 (short-trip negative offsets removed) + “use R2 for 5+ mi” handled in estimator
-  rate3:{
-    perMinute:[
-      { upTo: 12, v: 0.58 },
-      { upTo: 30, v: 0.62 },
-      { v: 0.44 }
-    ],
-    perMileRules:[
-      { when: { mMin: 3.3, mMax: 3.6, tMin: 14, tMax: 22 }, v: 3.55 },
-      { when: { mMin: 3.3, mMax: 3.6, tMin: 23, tMax: 28 }, v: 3.60 },
-      { when: { mMin: 4.5, mMax: 5.0, tMin: 16, tMax: 22 }, v: 3.70 },
-      { when: { mMin: 4.5, mMax: 5.0, tMin: 23, tMax: 32 }, v: 3.55 },
-      { when: { mMin: 5.0, mMax: 6.0, tMin: 18, tMax: 24 }, v: 3.45 },
-      { when: { mMin: 5.0, mMax: 6.0, tMin: 25, tMax: 34 }, v: 3.38 },
-      { when: { mMin: 6.0, mMax: 6.6, tMin: 22, tMax: 32 }, v: 3.35 },
-      { when: { mMin: 7.5, mMax: 9.5, tMin: 26, tMax: 36 }, v: 3.25 },
-      { when: { mMin: 7.5, mMax: 9.5, tMin: 37, tMax: 46 }, v: 3.10 },
-      { v: 4.00 }
-    ],
-    offsets:[
-      {when:{mMin:1.8,mMax:2.2,tMin:9,tMax:12}, d:-1.20},
-      {when:{mMin:5.5,mMax:6.3,tMin:28,tMax:40}, d:-1.40},
-      {when:{mMin:18,mMax:20,tMin:45,tMax:60}, d:1.20},
-      {when:{mMin:4.0,mMax:5.6,tMin:15,tMax:35}, d:-0.80},
-      {when:{mMin:6.5,mMax:8.0,tMin:22,tMax:40}, d:-1.00}
-    ]
-  }
-};
+/* ---------- helpers ---------- */
+const $ = (id)=>document.getElementById(id);
+const r2 = (x)=>Math.round(x*100)/100;
+const roundTo = (x,inc)=>Math.round(x/inc)*inc;
+const floorTo  = (x,inc)=>Math.floor(x/inc)*inc;
+const ceilTo   = (x,inc)=>Math.ceil (x/inc)*inc;
 
-const r2=(x)=>Math.round(x*100)/100, roundTo=(x,i)=>Math.round(x/i)*i, floorTo=(x,i)=>Math.floor(x/i)*i, ceilTo=(x,i)=>Math.ceil(x/i)*i;
+function parseCSV(text){
+  return text.trim().split(/\r?\n/).map(l=>{
+    const parts = l.split(/,|\t/).map(s=>s.trim());
+    if(!parts.length) return null;
+    // skip header lines if first cell not numeric
+    if(isNaN(parseFloat(parts[0]))) return null;
+    const m = Number(parts[0]), mi = Number(parts[1]), fare = Number(parts[2]);
+    if([m,mi,fare].some(v=>Number.isNaN(v))) return null;
+    return {mins:m, miles:mi, meter:fare};
+  }).filter(Boolean);
+}
 
-function matches(w, miles, mins){
-  if(!w) return true;
-  if(w.mMin!==undefined && miles < w.mMin) return false;
-  if(w.mMax!==undefined && miles > w.mMax) return false;
-  if(w.tMin!==undefined && mins  < w.tMin) return false;
-  if(w.tMax!==undefined && mins  > w.tMax) return false;
-  return true;
+/* ---------- live Rate-1 model (same shape as app, tunable) ---------- */
+function pickPerMile(params, miles, mins){
+  const {
+    pp_mle6, pp_7, pp_15, pp_25,
+    pp_35_45, pp_40_48_mid, pp_40_48_high, pp_fallback
+  } = params;
+
+  if (miles <= 6.0)             return pp_mle6;
+  if (mins >= 25)               return pp_25;
+  if (mins >= 15)               return pp_15;
+  if (mins >= 7)                return pp_7;
+  if (miles>=4.0 && miles<=4.8 && mins>=31 && mins<=45) return pp_40_48_high;
+  if (miles>=4.0 && miles<=4.8 && mins>=16 && mins<=30) return pp_40_48_mid;
+  if (miles>=3.5 && miles<=4.5 && mins>=16 && mins<=30) return pp_35_45;
+  return pp_fallback;
 }
-function pickPerMile(rules, miles, mins){
-  const r = rules.find(x=>matches(x.when,miles,mins));
-  return (r||rules[rules.length-1]).v;
-}
-function minutePart(tiers, mins){
+
+function minutePart(params, mins){
+  const {pm0,pm1,pm2} = params;
   let rem=mins, used=0, sum=0;
+  const tiers = [{upTo:12,v:pm0},{upTo:25,v:pm1},{v:pm2}];
   for(const t of tiers){
     if(t.upTo==null){ sum+=rem*t.v; break; }
     const span=Math.max(0, Math.min(rem, t.upTo-used));
@@ -182,165 +217,173 @@ function minutePart(tiers, mins){
   }
   return sum;
 }
-function sumOffsets(arr, miles, mins){
-  return arr.reduce((s,o)=>s+(matches(o.when,miles,mins)?o.d:0),0);
+
+function offsets(params, miles, mins){
+  let s=0;
+  if (miles>=3.0 && miles<=5.0 && mins>=18 && mins<=40) s += params.off_common;
+  return s;
 }
 
-function baseBand(miles){
-  return cfg.rangeBands.find(x=>miles<=x.max) || cfg.rangeBands[cfg.rangeBands.length-1];
-}
-function clampByFareSize(core, lower, upper){
-  if(core <= 20){ lower = Math.min(lower, core - 1.00); upper = Math.max(upper, core + 1.00);
-  } else if(core <= 40){ lower = Math.min(lower, core - 1.20); upper = Math.max(upper, core + 1.20);
-  } else if(core <= 60){ lower = Math.min(lower, core - 1.40); upper = Math.max(upper, core + 1.40);
-  } else { lower = Math.min(lower, core - 1.60); upper = Math.max(upper, core + 1.60); }
-  return {lower, upper};
-}
-function buildRange(core, miles, mins){
-  const b = baseBand(miles);
-  let lowerAdj = Math.max(b.lower.fixed, core*b.lower.pct);
-  let upperAdj = Math.max(b.upper.fixed, core*b.upper.pct);
-
-  if(miles<=1.0){ lowerAdj = Math.min(lowerAdj, 1.00); upperAdj = Math.min(Math.max(upperAdj, 1.20), 1.80); }
-  if(miles<=2.5 && mins>=15){ lowerAdj = Math.max(lowerAdj*1.05, lowerAdj+0.30); upperAdj = Math.max(upperAdj*1.20, upperAdj+0.80); }
-  if(miles>=6 && mins>=35){ upperAdj = Math.max(upperAdj*1.12, upperAdj+0.80); }
-
-  let lower = floorTo(roundTo(core - lowerAdj, cfg.inc), cfg.inc);
-  let upper = ceilTo (roundTo(core + upperAdj, cfg.inc), cfg.inc);
-
-  const c = clampByFareSize(core, lower, upper);
-  lower = c.lower; upper = c.upper;
-
-  if(miles<=0.8){ const abs = 6.20; if(lower < abs) lower = roundTo(abs, cfg.inc); }
-  if(lower>upper){ const t=lower; lower=upper; upper=t; } // safety swap
-  return {lower, upper};
-}
-function longTrim(core, trim, miles, mins){
-  if(!trim||!trim.enabled) return core;
-  if(!matches(trim.when,miles,mins)) return core;
-  const rounded = roundTo(core, cfg.inc);
-  const dec = Math.max(trim.minAbs, roundTo(rounded*trim.pct, cfg.inc));
-  return roundTo(rounded - dec, cfg.inc);
-}
-
-function estimate(rateKey, mins, miles){
-  const useR2ForR3 = (rateKey==='rate3' && miles>=5);
-  const r = useR2ForR3 ? cfg.rate2 : cfg[rateKey];
-
-  const mPart = minutePart(r.perMinute, mins);
-  const perMile = pickPerMile(r.perMileRules, miles, mins);
-  let core = cfg.baseFare + mPart + perMile*miles + sumOffsets(r.offsets||[], miles, mins);
-
-  if(!useR2ForR3 && rateKey==='rate3' && miles>=3 && miles<=7 && mins>30){
-    const k = 0.20 + 0.015*miles;
-    const extra = roundTo(k * (mins - 30), cfg.inc);
-    core += extra;
+function longTrim(core, params, miles, mins){
+  // using your old condition (rare edge)
+  if (miles>=35 && mins>=90){
+    const dec=Math.max(params.trim_pct*core, 2.00);
+    return core - dec;
   }
-  if(r.longTrim) core = longTrim(core, r.longTrim, miles, mins);
-  core = roundTo(core, cfg.inc);
-
-  const rng = buildRange(core, miles, mins);
-  return { core, lower:rng.lower, upper:rng.upper };
+  return core;
 }
 
-/* === UI logic === */
-const byId = id=>document.getElementById(id);
-const tbody = byId('tbody');
-const summary = byId('summary');
-
-function parseCSV(text, hasHeader){
-  const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-  const start = hasHeader ? 1 : 0;
-  const rows=[];
-  for(let i=start;i<lines.length;i++){
-    const parts = lines[i].split(',').map(s=>s.trim());
-    if(parts.length<2) continue;
-    const mins = Number(parts[0]), miles = Number(parts[1]);
-    const meter = parts.length>=3 && parts[2]!=='' ? Number(parts[2]) : null;
-    if(Number.isFinite(mins) && Number.isFinite(miles)) rows.push({mins,miles,meter});
-  }
-  return rows;
+function applyRangeClamp(core, params){
+  const {rg_20, rg_40, rg_60, rg_80} = params;
+  let band = rg_80;
+  if (core<=20) band = rg_20;
+  else if (core<=40) band = rg_40;
+  else if (core<=60) band = rg_60;
+  return {low: core - band, high: core + band};
 }
 
-function fmt(x){ return '£'+r2(x).toFixed(2); }
+function estimateRate1(mins, miles, P){
+  const inc = P.inc;
+  let core = P.base + minutePart(P, mins) + pickPerMile(P, miles, mins)*miles + offsets(P, miles, mins);
+  core = longTrim(core, P, miles, mins);
+  core = roundTo(core, inc);
+  const clamp = applyRangeClamp(core, P);
+  let low  = floorTo(roundTo(clamp.low,  inc), inc);
+  let high = ceilTo (roundTo(clamp.high, inc), inc);
+  if (miles<=0.8 && low<6.20) low=roundTo(6.20, inc);
+  return {core, low, high};
+}
 
-let lastResults=[];
+/* ---------- run + render ---------- */
+function getParams(){
+  return {
+    base: Number($('p_base').value||4.20),
+    inc: Number($('p_inc').value||0.20),
+
+    pm0: Number($('pm0').value||0.30),
+    pm1: Number($('pm1').value||0.36),
+    pm2: Number($('pm2').value||0.40),
+
+    pp_mle6: Number($('pp_mle6').value||3.60),
+    pp_7: Number($('pp_7').value||4.05),
+    pp_15: Number($('pp_15').value||3.95),
+    pp_25: Number($('pp_25').value||3.80),
+    pp_35_45: Number($('pp_35_45').value||3.65),
+    pp_40_48_mid: Number($('pp_40_48_mid').value||3.85),
+    pp_40_48_high: Number($('pp_40_48_high').value||4.30),
+    pp_fallback: Number($('pp_fallback').value||4.29),
+
+    off_common: Number($('off_common').value||1.20),
+    trim_pct: Number($('trim_pct').value||0.03),
+
+    rg_20: Number($('rg_20').value||1.00),
+    rg_40: Number($('rg_40').value||1.20),
+    rg_60: Number($('rg_60').value||1.40),
+    rg_80: Number($('rg_80').value||1.60),
+  };
+}
 
 function run(){
-  tbody.innerHTML='';
-  lastResults=[];
-  const rate = byId('rateSel').value;
-  const rows = parseCSV(byId('inp').value, byId('hasHeader').value==='yes');
-  if(!rows.length){ summary.textContent='No valid rows found.'; return; }
+  const rows = parseCSV($('data').value);
+  const P = getParams();
+  const tbody = $('tbody'); tbody.innerHTML='';
+  let errAbs=0, errPct=0, errSq=0, n=0;
 
-  let nMeter=0, sumAbs=0, sumSigned=0, within=0;
+  rows.forEach((r,i)=>{
+    const est = estimateRate1(r.mins, r.miles, P);
+    const err = est.core - r.meter;
+    const pct = r.meter>0 ? Math.abs(err)/r.meter : 0;
+    errAbs += Math.abs(err); errPct += pct; errSq += err*err; n++;
 
-  rows.forEach((r,idx)=>{
-    const est = estimate(rate, r.mins, r.miles);
-    const meter = r.meter;
-    let diff='', tag='';
-
-    if(meter!=null && Number.isFinite(meter)){
-      nMeter++;
-      const d = r2(est.core - meter);
-      diff = (d>=0?'+':'') + d.toFixed(2);
-      sumAbs += Math.abs(d);
-      sumSigned += d;
-      if(meter>=est.lower && meter<=est.upper) within++;
-      tag = `<span class="tag ${meter>=est.lower && meter<=est.upper?'in':'out'}">${meter>=est.lower && meter<=est.upper?'Within':'Outside'}</span>`;
-    }
-
-    const tr=document.createElement('tr');
+    const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td>${idx+1}</td>
+      <td>${i+1}</td>
       <td>${r.mins}</td>
-      <td>${r.miles}</td>
-      <td class="mono">${fmt(est.core)}</td>
-      <td class="mono">${fmt(est.lower)}–${fmt(est.upper)}</td>
-      <td class="mono">${meter!=null?fmt(meter):''}</td>
-      <td class="mono">${diff}</td>
-      <td>${meter!=null?tag:''}</td>
-    `;
+      <td>${r.miles.toFixed(1)}</td>
+      <td class="mono">£${r.meter.toFixed(2)}</td>
+      <td class="mono">£${est.core.toFixed(2)}</td>
+      <td class="mono">£${est.low.toFixed(2)}</td>
+      <td class="mono">£${est.high.toFixed(2)}</td>
+      <td class="mono ${Math.abs(err)>1.2?'bad':''}">${err>=0?'+':''}${err.toFixed(2)}</td>`;
     tbody.appendChild(tr);
-
-    lastResults.push({
-      index: idx+1, minutes:r.mins, miles:r.miles,
-      core: est.core, lower: est.lower, upper: est.upper,
-      meter: meter, diff: meter!=null? r2(est.core - meter): ''
-    });
   });
 
-  let line = `${rows.length} rows processed on ${rate}.`;
-  if(nMeter){
-    const mae = r2(sumAbs/nMeter).toFixed(2);
-    const bias = r2(sumSigned/nMeter).toFixed(2);
-    const pctIn = Math.round((within/nMeter)*100);
-    line += ` With meter: ${nMeter} rows • MAE £${mae} • Bias £${bias} • Within range ${pctIn}%.`;
+  if(n>0){
+    $('mae').textContent = '£'+(errAbs/n).toFixed(2);
+    $('mape').textContent = ((errPct/n)*100).toFixed(1)+'%';
+    $('rmse').textContent = '£'+Math.sqrt(errSq/n).toFixed(2);
+  }else{
+    $('mae').textContent = $('mape').textContent = $('rmse').textContent = '–';
   }
-  summary.textContent = line;
+
+  // persist
+  localStorage.setItem('cw_rate1_tester_params', JSON.stringify(P));
+  localStorage.setItem('cw_rate1_tester_data', $('data').value);
 }
 
 function exportCSV(){
-  if(!lastResults.length) return;
-  const head = ["#", "minutes", "miles", "core", "lower", "upper", "meter", "diff"];
-  const rows = [head.join(',')];
-  lastResults.forEach(r=>{
-    rows.push([r.index, r.minutes, r.miles, r.core.toFixed(2), r.lower.toFixed(2), r.upper.toFixed(2),
-               r.meter!=null? r.meter.toFixed(2):"", r.diff!==''? r.diff.toFixed(2):""].join(','));
+  const table = document.getElementById('tbl');
+  let csv = [];
+  const head = Array.from(table.tHead.rows[0].cells).map(th=>`"${th.textContent}"`).join(',');
+  csv.push(head);
+  Array.from(table.tBodies[0].rows).forEach(tr=>{
+    const row = Array.from(tr.cells).map(td=>`"${td.textContent.replaceAll('"','""')}"`).join(',');
+    csv.push(row);
   });
-  const blob = new Blob([rows.join('\r\n')], {type:'text/csv'});
-  const a=document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'cabwizz_batch_results.csv';
-  a.click();
-  URL.revokeObjectURL(a.href);
+  const blob = new Blob([csv.join('\r\n')],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='rate1_tester_results.csv'; a.click(); URL.revokeObjectURL(a.href);
 }
 
-byId('runBtn').addEventListener('click', run);
-byId('exportBtn').addEventListener('click', exportCSV);
-byId('clearBtn').addEventListener('click', ()=>{
-  byId('inp').value=''; tbody.innerHTML=''; summary.textContent='Cleared.';
-  lastResults=[];
+function copySnippet(){
+  const P = getParams();
+  const js = `
+/* === Rate 1 (from tester) === */
+rate1:{
+  perMinute:[{upTo:12,v:${P.pm0.toFixed(2)}},{upTo:25,v:${P.pm1.toFixed(2)}},{v:${P.pm2.toFixed(2)}}],
+  perMileRules:[
+    {when:{mMax:6.0}, v:${P.pp_mle6.toFixed(2)}},
+    {when:{mMin:4.0,mMax:4.8,tMin:31,tMax:45}, v:${P.pp_40_48_high.toFixed(2)}},
+    {when:{mMin:4.0,mMax:4.8,tMin:16,tMax:30}, v:${P.pp_40_48_mid.toFixed(2)}},
+    {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:${P.pp_35_45.toFixed(2)}},
+    {when:{mMin:25}, v:${P.pp_25.toFixed(2)}},
+    {when:{mMin:15}, v:${P.pp_15.toFixed(2)}},
+    {when:{mMin:7},  v:${P.pp_7.toFixed(2)}},
+    {v:${P.pp_fallback.toFixed(2)}}
+  ],
+  offsets:[
+    {when:{mMin:3.0,mMax:5.0,tMin:18,tMax:40}, d:${P.off_common.toFixed(2)}}
+  ],
+  longTrim:{ enabled:true, when:{mMin:35,tMin:90}, pct:${P.trim_pct.toFixed(2)}, minAbs:2.00 }
+},
+/* global */
+baseFare:${P.base.toFixed(2)}, inc:${P.inc.toFixed(2)},
+/* range clamps */
+ranges:{ s20:${P.rg_20.toFixed(2)}, s40:${P.rg_40.toFixed(2)}, s60:${P.rg_60.toFixed(2)}, s80:${P.rg_80.toFixed(2)} }
+`.trim();
+
+  navigator.clipboard.writeText(js).then(()=>{
+    alert('Copied Rate-1 snippet to clipboard.\nPaste into your estimator’s cfg (rate1 + base/inc + clamp values).');
+  });
+}
+
+function loadPersist(){
+  try{
+    const p = JSON.parse(localStorage.getItem('cw_rate1_tester_params')||'{}');
+    Object.entries(p).forEach(([k,v])=>{ const el=$(k.replace(/^/,'p_')); if($(k)) $(k).value=v; });
+    $('data').value = localStorage.getItem('cw_rate1_tester_data') || $('data').value;
+  }catch(e){}
+}
+
+/* ---------- events ---------- */
+window.addEventListener('load', ()=>{
+  loadPersist();
+  $('runBtn').addEventListener('click', run);
+  $('exportBtn').addEventListener('click', exportCSV);
+  $('saveCfgBtn').addEventListener('click', copySnippet);
+  $('clearBtn').addEventListener('click', ()=>{
+    if(confirm('Clear data and results?')){ $('data').value=''; $('tbody').innerHTML=''; localStorage.removeItem('cw_rate1_tester_data'); }
+  });
 });
 </script>
 </body>

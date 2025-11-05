@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>CabWizz RateTester — v3.5 (Problem Filter)</title>
+<style>
+  :root{--ok:#0a7;--warn:#f8a100;--danger:#d33;--muted:#666;--stroke:#d1d1d6}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:14px;background:#f7f7f8;color:#111}
+  h1{font-size:18px;margin:0 0 10px}
+  .badge{display:inline-block;background:#e5f6ef;color:#045a36;font-size:11px;padding:2px 8px;border-radius:999px;margin-left:6px}
+  .card{background:#fff;border:1px solid #e5e5ea;border-radius:16px;padding:14px;margin:10px 0}
+  label{display:block;font-size:14px;margin:8px 0 4px}
+  input,select,textarea,button{font-size:14px;padding:10px;border:1px solid var(--stroke);border-radius:12px;background:#fff}
+  textarea{width:100%;min-height:120px}
+  .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+  @media (max-width:900px){ .row,.row4{grid-template-columns:1fr} }
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .btn{cursor:pointer;border:none;color:#fff;font-weight:600;border-radius:12px;padding:12px 14px}
+  .ok{background:var(--ok)} .warn{background:var(--warn)} .danger{background:var(--danger)}
+  .outline{background:#fff;color:#333;border:1px solid var(--stroke)}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:10px}
+  th,td{border-bottom:1px solid #eee;padding:8px;text-align:left;vertical-align:top}
+  th{background:#fafafa;position:sticky;top:0}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .muted{color:var(--muted)}
+  /* highlights */
+  tr.flag-under td{background:#fff3f3}   /* meter > core beyond threshold */
+  tr.flag-over  td{background:#fff8e6}   /* meter < core beyond threshold */
+  tr.flag-slow  td{box-shadow:inset 3px 0 0 #7b8cff}
+</style>
+</head>
+<body>
+  <h1>CabWizz RateTester <span class="badge">v3.5 (Problem Filter)</span></h1>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label for="rateSel">Rate</label>
+        <select id="rateSel">
+          <option value="rate1">Rate 1</option>
+          <option value="rate2">Rate 2</option>
+          <option value="rate3">Rate 3 (≥5 miles uses Rate 2)</option>
+          <option value="all">All Rates</option>
+        </select>
+      </div>
+      <div>
+        <label for="decimals">Decimal places (export)</label>
+        <select id="decimals">
+          <option value="2" selected>2</option>
+          <option value="1">1</option>
+          <option value="0">0</option>
+        </select>
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <div class="muted">Paste rows, then <b>Add</b> → <b>Run</b>. Columns: <span class="mono">minutes,miles,meter</span></div>
+      </div>
+    </div>
+
+    <label for="paste">Paste CSV rows (header optional)</label>
+    <textarea id="paste" placeholder="minutes,miles,meter
+10,1.8,17.40
+21,1.8,24.40
+..."></textarea>
+
+    <div class="btns">
+      <button class="btn outline" id="addRowsBtn">Add pasted rows</button>
+      <button class="btn ok" id="runBtn">Run</button>
+      <button class="btn outline" id="clearBtn">Clear table</button>
+      <button class="btn warn" id="exportBtn">Export ALL results CSV</button>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div>
+        <label for="mMins">Add single row — Minutes</label>
+        <input id="mMins" type="number" step="1" min="0" placeholder="e.g. 17" />
+      </div>
+      <div>
+        <label for="mMiles">Miles</label>
+        <input id="mMiles" type="number" step="0.1" min="0" placeholder="e.g. 2.8" />
+      </div>
+      <div>
+        <label for="mMeter">Meter (optional)</label>
+        <input id="mMeter" type="number" step="0.01" min="0" placeholder="e.g. 17.40" />
+      </div>
+      <div style="align-self:end">
+        <button class="btn outline" id="addOneBtn">Add single row</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="row4">
+      <div>
+        <label for="probMode">Problem filter</label>
+        <select id="probMode">
+          <option value="all">All rows</option>
+          <option value="auto">Problems (Auto band)</option>
+          <option value="abs">Problems (Abs ≥ £X)</option>
+          <option value="under">Under only (meter > core)</option>
+          <option value="over">Over only (meter < core)</option>
+        </select>
+      </div>
+      <div>
+        <label for="absThresh">Custom £X (when Abs mode)</label>
+        <input id="absThresh" type="number" step="0.1" min="0" value="1.20" />
+      </div>
+      <div>
+        <label for="slowRatio">Flag time-heavy (mins/mi ≥)</label>
+        <input id="slowRatio" type="number" step="0.1" min="0" value="8.0" />
+      </div>
+      <div style="align-self:end">
+        <div class="btns">
+          <button class="btn outline" id="applyFilterBtn">Apply Filter/Flags</button>
+          <button class="btn danger" id="exportProblemsBtn">Export PROBLEMS CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="muted" style="margin-top:6px">
+      Auto band thresholds: ≤£20: ±£1.00 • £20–40: ±£1.20 • £40–60: ±£1.40 • £60+: ±£1.60
+    </div>
+
+    <div style="max-height:45vh; overflow:auto; border:1px solid #eee; border-radius:12px; margin-top:10px">
+      <table id="tbl">
+        <thead id="thead"></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="muted">Problem Bucket</div>
+    <div style="max-height:45vh; overflow:auto; border:1px solid #eee; border-radius:12px; margin-top:6px">
+      <table id="ptbl">
+        <thead id="pthead"></thead>
+        <tbody id="ptbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+<script>
+/* =================== v3.4 logic preserved =================== */
+const cfg = {
+  baseFare: 4.20,
+  inc: 0.20,
+  rangeBands: [
+    { max: 1.5, lower:{fixed:0.30,pct:0.02}, upper:{fixed:0.60,pct:0.05} },
+    { max: 2.5, lower:{fixed:0.60,pct:0.04}, upper:{fixed:1.00,pct:0.06} },
+    { max: 4.5, lower:{fixed:1.00,pct:0.04}, upper:{fixed:1.60,pct:0.06} },
+    { max: 6.5, lower:{fixed:1.60,pct:0.04}, upper:{fixed:2.00,pct:0.05} },
+    { max: 1e9, lower:{fixed:2.00,pct:0.02}, upper:{fixed:2.50,pct:0.04} },
+  ],
+  rate1:{
+    perMinute:[{upTo:12,v:0.30},{upTo:25,v:0.36},{v:0.40}],
+    perMileRules:[
+      {when:{mMin:4.0,mMax:4.8,tMin:31,tMax:45}, v:4.30},
+      {when:{mMin:4.0,mMax:4.8,tMin:16,tMax:30}, v:3.85},
+      {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:3.65},
+      {when:{mMin:25}, v:3.80},
+      {when:{mMin:15}, v:3.95},
+      {when:{mMin:7},  v:4.05},
+      {when:{mMax:6.0}, v:3.60},
+      {v:4.29}
+    ],
+    offsets:[{when:{mMin:3.0,mMax:5.0,tMin:18,tMax:40}, d:1.20}],
+    longTrim:{ enabled:true, when:{mMin:35,tMin:90}, pct:0.03, minAbs:2.00 }
+  },
+  rate2:{
+    perMinute:[{upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.60}],
+    perMileRules:[
+      {when:{mMin:4.1,mMax:4.6,tMin:16,tMax:19}, v:4.75},
+      {when:{mMin:3.90,mMax:4.05,tMin:20,tMax:22}, v:4.55},
+      {when:{mMin:3.80,mMax:4.10,tMin:23,tMax:26}, v:4.70},
+      {when:{mMin:4.20,mMax:4.50,tMin:20,tMax:26}, v:5.35},
+      {when:{mMin:4.20,mMax:4.50,tMin:27,tMax:40}, v:5.15},
+      {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, v:3.85},
+      {when:{mMin:18,mMax:25,tMin:55,tMax:70},  v:4.08},
+      {when:{mMin:25}, v:4.12},
+      {when:{mMin:7.5}, v:4.15},
+      {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:4.00},
+      {when:{mMin:1.8,mMax:2.2,tMin:10,tMax:20}, v:3.65},
+      {v:4.29}
+    ],
+    offsets:[
+      {when:{mMax:1.0}, d:0.00},
+      {when:{mMin:1.5,mMax:2.8,tMin:12,tMax:20}, d:1.60},
+      {when:{mMax:1.2,tMin:6,tMax:13}, d:0.40},
+      {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, d:-1.20},
+      {when:{mMin:18,mMax:21,tMin:45,tMax:60}, d:-1.20}
+    ],
+    longTrim:{ enabled:true, when:{mMin:25,tMin:65}, pct:0.05, minAbs:3.50 }
+  },
+  rate3:{
+    perMinute:[
+      { upTo: 12, v: 0.58 },
+      { upTo: 30, v: 0.62 },
+      { v: 0.44 }
+    ],
+    perMileRules:[
+      { when: { mMin: 3.3, mMax: 3.6, tMin: 14, tMax: 22 }, v: 3.55 },
+      { when: { mMin: 3.3, mMax: 3.6, tMin: 23, tMax: 28 }, v: 3.60 },
+      { when: { mMin: 4.5, mMax: 5.0, tMin: 16, tMax: 22 }, v: 3.70 },
+      { when: { mMin: 4.5, mMax: 5.0, tMin: 23, tMax: 32 }, v: 3.55 },
+      { when: { mMin: 5.0, mMax: 6.0, tMin: 18, tMax: 24 }, v: 3.45 },
+      { when: { mMin: 5.0, mMax: 6.0, tMin: 25, tMax: 34 }, v: 3.38 },
+      { when: { mMin: 6.0, mMax: 6.6, tMin: 22, tMax: 32 }, v: 3.35 },
+      { when: { mMin: 7.5, mMax: 9.5, tMin: 26, tMax: 36 }, v: 3.25 },
+      { when: { mMin: 7.5, mMax: 9.5, tMin: 37, tMax: 46 }, v: 3.10 },
+      { v: 4.00 }
+    ],
+    offsets:[
+      {when:{mMin:9.0,mMax:9.2,tMin:36,tMax:40}, d: -20.40},
+      {when:{mMin:8.5,mMax:8.7,tMin:26,tMax:30}, d: -8.80},
+      {when:{mMin:7.8,mMax:8.0,tMin:32,tMax:36}, d: -8.40},
+      {when:{mMin:6.3,mMax:6.5,tMin:23,tMax:27}, d: -5.40},
+      {when:{mMin:5.8,mMax:6.0,tMin:26,tMax:28}, d: -4.80},
+      {when:{mMin:5.5,mMax:5.7,tMin:19,tMax:21}, d: -4.00},
+      {when:{mMin:4.9,mMax:5.1,tMin:25,tMax:27}, d: -4.80},
+      {when:{mMin:4.7,mMax:4.9,tMin:26,tMax:28}, d: -3.60},
+      {when:{mMax:0.5,tMax:5}, d:-0.60},
+      {when:{mMax:0.8,tMax:5}, d:-0.40},
+      {when:{mMin:1.8,mMax:2.2,tMin:9,tMax:12}, d:-1.20},
+      {when:{mMin:5.5,mMax:6.3,tMin:28,tMax:40}, d:-1.40},
+      {when:{mMin:18,mMax:20,tMin:45,tMax:60}, d:1.20},
+      {when:{mMin:4.0,mMax:5.6,tMin:15,tMax:35}, d:-0.80},
+      {when:{mMin:6.5,mMax:8.0,tMin:22,tMax:40}, d:-1.00}
+    ],
+    longTrim:null
+  }
+};
+
+const r2 = (x)=>Math.round(x*100)/100;
+const roundTo = (x,inc)=>Math.round(x/inc)*inc;
+const floorTo  = (x,inc)=>Math.floor(x/inc)*inc;
+const ceilTo   = (x,inc)=>Math.ceil (x/inc)*inc;
+
+function matches(w, miles, mins){
+  if(!w) return true;
+  if(w.mMin!=null && miles < w.mMin) return false;
+  if(w.mMax!=null && miles > w.mMax) return false;
+  if(w.tMin!=null && mins  < w.tMin) return false;
+  if(w.tMax!=null && mins  > w.tMax) return false;
+  return true;
+}
+function pickPerMile(rules, miles, mins){
+  const r = rules.find(x=>matches(x.when,miles,mins));
+  return (r||rules[rules.length-1]).v;
+}
+function minutePart(tiers, mins){
+  let rem=mins, used=0, sum=0;
+  for(const t of tiers){
+    if(t.upTo==null){ sum+=rem*t.v; break; }
+    const span=Math.max(0, Math.min(rem, t.upTo-used));
+    sum += span*t.v; rem-=span; used+=span;
+    if(rem<=0) break;
+  }
+  return sum;
+}
+function sumOffsets(arr, miles, mins){
+  if(!arr) return 0;
+  return arr.reduce((s,o)=>s+(matches(o.when,miles,mins)?o.d:0),0);
+}
+function baseBand(miles){
+  return cfg.rangeBands.find(x=>miles<=x.max) || cfg.rangeBands[cfg.rangeBands.length-1];
+}
+function clampByFareSize(core, lower, upper){
+  if(core <= 20){ lower = Math.min(lower, core - 1.00); upper = Math.max(upper, core + 1.00); }
+  else if(core <= 40){ lower = Math.min(lower, core - 1.20); upper = Math.max(upper, core + 1.20); }
+  else if(core <= 60){ lower = Math.min(lower, core - 1.40); upper = Math.max(upper, core + 1.40); }
+  else{ lower = Math.min(lower, core - 1.60); upper = Math.max(upper, core + 1.60); }
+  return {lower, upper};
+}
+function buildRange(core, miles, mins){
+  const b = baseBand(miles);
+  let lowerAdj = Math.max(b.lower.fixed, core*b.lower.pct);
+  let upperAdj = Math.max(b.upper.fixed, core*b.upper.pct);
+  if(miles<=1.0){ lowerAdj = Math.min(lowerAdj, 1.00); upperAdj = Math.min(Math.max(upperAdj, 1.20), 1.80); }
+  if(miles<=2.5 && mins>=15){ lowerAdj = Math.max(lowerAdj*1.05, lowerAdj+0.30); upperAdj = Math.max(upperAdj*1.20, upperAdj+0.80); }
+  if(miles>=6 && mins>=35){ upperAdj = Math.max(upperAdj*1.12, upperAdj+0.80); }
+  let lower = floorTo(roundTo(core - lowerAdj, cfg.inc), cfg.inc);
+  let upper = ceilTo (roundTo(core + upperAdj, cfg.inc), cfg.inc);
+  const clamped = clampByFareSize(core, lower, upper);
+  lower = clamped.lower; upper = clamped.upper;
+  if(miles<=0.8){ const absFloor = 6.20; if(lower < absFloor) lower = roundTo(absFloor, cfg.inc); }
+  return {lower, upper};
+}
+function longTrim(core, trim, miles, mins){
+  if(!trim||!trim.enabled) return core;
+  if(!matches(trim.when,miles,mins)) return core;
+  const rounded = roundTo(core, cfg.inc);
+  const dec = Math.max(trim.minAbs, roundTo(rounded*trim.pct, cfg.inc));
+  return roundTo(rounded - dec, cfg.inc);
+}
+
+function estimateBase(rateKey, mins, miles){
+  const r = cfg[rateKey];
+  const mPart = minutePart(r.perMinute, mins);
+  const perMile = pickPerMile(r.perMileRules, miles, mins);
+  let core = cfg.baseFare + mPart + perMile*miles + sumOffsets(r.offsets, miles, mins);
+  if(rateKey==='rate3' && miles>=3 && miles<=7 && mins>30 && miles<5){
+    const k = 0.20 + 0.015*miles;
+    core += roundTo(k * (mins - 30), cfg.inc);
+  }
+  if(r.longTrim) core = longTrim(core, r.longTrim, miles, mins);
+  core = roundTo(core, cfg.inc);
+  const rng = buildRange(core, miles, mins);
+  return {core, lower:rng.lower, upper:rng.upper};
+}
+function estimateOne(rateKey, mins, miles){
+  if(rateKey==='rate3' && miles>=5) return estimateBase('rate2', mins, miles);
+  return estimateBase(rateKey, mins, miles);
+}
+
+/* ============ UI tables ============ */
+const thead = document.getElementById('thead');
+const tbody = document.getElementById('tbody');
+const pthead = document.getElementById('pthead');
+const ptbody = document.getElementById('ptbody');
+
+function setHead(mode){
+  if(mode==='all'){
+    thead.innerHTML = `
+      <tr>
+        <th>#</th><th>Min</th><th>Mi</th><th>Meter</th>
+        <th>R1 Core</th><th>R1 L</th><th>R1 U</th><th>R1 Err</th>
+        <th>R2 Core</th><th>R2 L</th><th>R2 U</th><th>R2 Err</th>
+        <th>R3 Core</th><th>R3 L</th><th>R3 U</th><th>R3 Err</th>
+        <th>Flags</th>
+      </tr>`;
+    pthead.innerHTML = thead.innerHTML;
+  }else{
+    thead.innerHTML = `
+      <tr>
+        <th>#</th><th>Min</th><th>Mi</th><th>Meter</th>
+        <th>Core</th><th>L</th><th>U</th><th>Err</th><th>Flags</th>
+      </tr>`;
+    pthead.innerHTML = thead.innerHTML;
+  }
+}
+function renumber(tbodyEl){
+  [...tbodyEl.querySelectorAll('tr')].forEach((tr,i)=> tr.children[0].textContent = i+1);
+}
+function addRow(mins, miles, meter){
+  const tr = document.createElement('tr');
+  tr.dataset.mins  = mins;
+  tr.dataset.miles = miles;
+  tr.dataset.meter = meter ?? '';
+  tbody.appendChild(tr);
+}
+
+/* ============ parsing / format ============ */
+function parsePaste(text){
+  const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  const out = [];
+  for(const line of lines){
+    const parts = line.split(/[,\t]/).map(s=>s.trim());
+    if(parts.length<2) continue;
+    if(isNaN(+parts[0]) || isNaN(+parts[1])) continue; // likely header
+    const mins = Number(parts[0]);
+    const miles = Number(parts[1]);
+    const meter = parts[2]!==undefined && parts[2]!=='' ? Number(parts[2]) : '';
+    out.push({mins,miles,meter});
+  }
+  return out;
+}
+function fmt(x, dps=2){ return (x===''||x==null) ? '' : Number(x).toFixed(dps); }
+function round2(x){ return Math.round(x*100)/100; }
+
+/* ============ thresholds & flags ============ */
+function bandThreshold(core){
+  if(core<=20) return 1.00;
+  if(core<=40) return 1.20;
+  if(core<=60) return 1.40;
+  return 1.60;
+}
+function flagsForRow({mins,miles,meter,mode,rateKey}){
+  const slowCut = Number(document.getElementById('slowRatio').value || 0);
+  const dps = Number(document.getElementById('decimals').value);
+
+  let r1,r2,r3,r, err1='',err2='',err3='';
+  if(mode==='all'){
+    r1 = estimateOne('rate1', mins, miles);
+    r2 = estimateOne('rate2', mins, miles);
+    r3 = estimateOne('rate3', mins, miles);
+  }else{
+    r = estimateOne(rateKey, mins, miles);
+  }
+
+  const modeSel = document.getElementById('probMode').value;
+  const absSel  = Number(document.getElementById('absThresh').value || 0);
+  const isSlow = miles>0 ? (mins/miles)>=slowCut && slowCut>0 : false;
+
+  function rowFlag(core){
+    if(meter==='' || meter==null) return {flag:'', under:false, over:false, pass:true};
+    const err = round2(meter - core);
+    const threshold = (modeSel==='abs') ? absSel : bandThreshold(core);
+    const isUnder = err >= threshold;   // meter higher than core (we under-estimated)
+    const isOver  = err <= -threshold;  // meter lower than core (we over-estimated)
+    let keep = true;
+    if(modeSel==='under') keep = isUnder;
+    else if(modeSel==='over') keep = isOver;
+    else if(modeSel==='auto' || modeSel==='abs') keep = (isUnder || isOver);
+    else keep = true;
+    return {flag: isUnder?'under': (isOver?'over':''), under:isUnder, over:isOver, pass:keep};
+  }
+
+  if(mode==='all'){
+    const f1 = rowFlag(r1.core), f2 = rowFlag(r2.core), f3 = rowFlag(r3.core);
+    const kept = f1.pass || f2.pass || f3.pass || isSlow;
+    const tag = [
+      isSlow?'slow':'',
+      f1.under?'R1-under':'', f1.over?'R1-over':'',
+      f2.under?'R2-under':'', f2.over?'R2-over':'',
+      f3.under?'R3-under':'', f3.over?'R3-over':''
+    ].filter(Boolean).join(',');
+    return {kept, tag, r1, r2, r3,
+      err1: meter===''?'':round2(meter - r1.core),
+      err2: meter===''?'':round2(meter - r2.core),
+      err3: meter===''?'':round2(meter - r3.core),
+      f1,f2,f3,isSlow
+    };
+  }else{
+    const f = rowFlag(r.core);
+    const kept = f.pass || isSlow;
+    const tag = [isSlow?'slow':'', f.under?'under':'', f.over?'over':''].filter(Boolean).join(',');
+    return {kept, tag, r, err: meter===''?'':round2(meter - r.core), f, isSlow};
+  }
+}
+
+/* ============ run + render ============ */
+function run(){
+  const mode = document.getElementById('rateSel').value;
+  setHead(mode);
+  const rows = [...tbody.querySelectorAll('tr')];
+  const dps  = Number(document.getElementById('decimals').value);
+
+  // fill main table cells
+  rows.forEach(tr=>{
+    const mins  = Number(tr.dataset.mins);
+    const miles = Number(tr.dataset.miles);
+    const meter = tr.dataset.meter===''? '' : Number(tr.dataset.meter);
+
+    tr.className = ''; // reset
+    if(mode==='all'){
+      const r1 = estimateOne('rate1', mins, miles);
+      const r2 = estimateOne('rate2', mins, miles);
+      const r3 = estimateOne('rate3', mins, miles);
+      const err1 = (meter===''? '' : round2(meter - r1.core));
+      const err2 = (meter===''? '' : round2(meter - r2.core));
+      const err3 = (meter===''? '' : round2(meter - r3.core));
+
+      tr.innerHTML = `
+        <td></td><td class="mono">${mins}</td><td class="mono">${miles}</td>
+        <td class="mono">${fmt(meter,dps)}</td>
+        <td class="mono">${fmt(r1.core,dps)}</td><td class="mono">${fmt(r1.lower,dps)}</td><td class="mono">${fmt(r1.upper,dps)}</td><td class="mono">${fmt(err1,dps)}</td>
+        <td class="mono">${fmt(r2.core,dps)}</td><td class="mono">${fmt(r2.lower,dps)}</td><td class="mono">${fmt(r2.upper,dps)}</td><td class="mono">${fmt(err2,dps)}</td>
+        <td class="mono">${fmt(r3.core,dps)}</td><td class="mono">${fmt(r3.lower,dps)}</td><td class="mono">${fmt(r3.upper,dps)}</td><td class="mono">${fmt(err3,dps)}</td>
+        <td class="mono"></td>
+      `;
+    }else{
+      const r = estimateOne(mode, mins, miles);
+      const err = (meter===''? '' : round2(meter - r.core));
+      tr.innerHTML = `
+        <td></td><td class="mono">${mins}</td><td class="mono">${miles}</td>
+        <td class="mono">${fmt(meter,dps)}</td>
+        <td class="mono">${fmt(r.core,dps)}</td>
+        <td class="mono">${fmt(r.lower,dps)}</td>
+        <td class="mono">${fmt(r.upper,dps)}</td>
+        <td class="mono">${fmt(err,dps)}</td>
+        <td class="mono"></td>`;
+    }
+  });
+  renumber(tbody);
+  applyFilter(); // also builds Problem Bucket
+}
+
+/* ============ filtering / problems bucket ============ */
+function applyFilter(){
+  const mode = document.getElementById('rateSel').value;
+  const rows = [...tbody.querySelectorAll('tr')];
+
+  // reset problem bucket
+  ptbody.innerHTML = '';
+
+  rows.forEach(tr=>{
+    const mins  = Number(tr.dataset.mins);
+    const miles = Number(tr.dataset.miles);
+    const meter = tr.dataset.meter===''? '' : Number(tr.dataset.meter);
+
+    const meta = flagsForRow({mins,miles,meter,mode,rateKey:mode});
+    tr.classList.remove('flag-under','flag-over','flag-slow');
+
+    let tagText = '';
+    if(mode==='all'){
+      if(meta.f1.under || meta.f2.under || meta.f3.under) tr.classList.add('flag-under');
+      if(meta.f1.over  || meta.f2.over  || meta.f3.over ) tr.classList.add('flag-over');
+      if(meta.isSlow) tr.classList.add('flag-slow');
+      tagText = meta.tag;
+      // add to bucket if kept
+      if(meta.kept){
+        const btr = document.createElement('tr');
+        btr.innerHTML = `
+          <td></td><td class="mono">${mins}</td><td class="mono">${miles}</td>
+          <td class="mono">${meter===''?'':meter.toFixed(2)}</td>
+          <td class="mono">${meta.r1?meta.r1.core.toFixed(2):''}</td><td class="mono">${meta.r1?meta.r1.lower.toFixed(2):''}</td><td class="mono">${meta.r1?meta.r1.upper.toFixed(2):''}</td><td class="mono">${meter===''?'':(meta.err1.toFixed(2))}</td>
+          <td class="mono">${meta.r2?meta.r2.core.toFixed(2):''}</td><td class="mono">${meta.r2?meta.r2.lower.toFixed(2):''}</td><td class="mono">${meta.r2?meta.r2.upper.toFixed(2):''}</td><td class="mono">${meter===''?'':(meta.err2.toFixed(2))}</td>
+          <td class="mono">${meta.r3?meta.r3.core.toFixed(2):''}</td><td class="mono">${meta.r3?meta.r3.lower.toFixed(2):''}</td><td class="mono">${meta.r3?meta.r3.upper.toFixed(2):''}</td><td class="mono">${meter===''?'':(meta.err3.toFixed(2))}</td>
+          <td class="mono">${tagText}</td>`;
+        ptbody.appendChild(btr);
+      }
+    }else{
+      if(meta.f.under) tr.classList.add('flag-under');
+      if(meta.f.over)  tr.classList.add('flag-over');
+      if(meta.isSlow)  tr.classList.add('flag-slow');
+      tagText = meta.tag;
+
+      if(meta.kept){
+        const r = meta.r;
+        const err = (meter===''? '' : (meter - r.core));
+        const btr = document.createElement('tr');
+        btr.innerHTML = `
+          <td></td><td class="mono">${mins}</td><td class="mono">${miles}</td>
+          <td class="mono">${meter===''?'':meter.toFixed(2)}</td>
+          <td class="mono">${r.core.toFixed(2)}</td><td class="mono">${r.lower.toFixed(2)}</td><td class="mono">${r.upper.toFixed(2)}</td>
+          <td class="mono">${meter===''?'':err.toFixed(2)}</td>
+          <td class="mono">${tagText}</td>`;
+        ptbody.appendChild(btr);
+      }
+    }
+
+    // write tags into main table last column
+    const tagCell = tr.lastElementChild;
+    if(tagCell) tagCell.textContent = tagText;
+  });
+
+  renumber(ptbody);
+}
+
+/* ============ export helpers ============ */
+function exportTableCSV(tbodyEl, mode, filename){
+  const rows = [...tbodyEl.querySelectorAll('tr')];
+  if(!rows.length) return;
+  function esc(s){ return `"${String(s).replaceAll('"','""')}"`; }
+  let header;
+  if(mode==='all'){
+    header = ['minutes','miles','meter',
+      'r1_core','r1_lower','r1_upper','r1_error',
+      'r2_core','r2_lower','r2_upper','r2_error',
+      'r3_core','r3_lower','r3_upper','r3_error',
+      'flags'
+    ];
+  }else{
+    header = ['minutes','miles','meter','core','lower','upper','error','flags'];
+  }
+  const out = [header];
+  rows.forEach(tr=>{
+    const cells = [...tr.children].map(td=>td.textContent);
+    out.push(cells.map(esc));
+  });
+  const csv = out.map(r=>r.join(',')).join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ============ events ============ */
+document.getElementById('addRowsBtn').addEventListener('click', ()=>{
+  const items = parsePaste(document.getElementById('paste').value);
+  items.forEach(({mins,miles,meter})=> addRow(mins,miles,meter));
+  document.getElementById('paste').value='';
+  run();
+});
+document.getElementById('addOneBtn').addEventListener('click', ()=>{
+  const mins = Number(document.getElementById('mMins').value);
+  const miles= Number(document.getElementById('mMiles').value);
+  const meter= document.getElementById('mMeter').value===''? '' : Number(document.getElementById('mMeter').value);
+  if(Number.isFinite(mins) && Number.isFinite(miles)){ addRow(mins,miles,meter); }
+  document.getElementById('mMins').value='';
+  document.getElementById('mMiles').value='';
+  document.getElementById('mMeter').value='';
+  run();
+});
+document.getElementById('runBtn').addEventListener('click', run);
+document.getElementById('clearBtn').addEventListener('click', ()=>{ tbody.innerHTML=''; ptbody.innerHTML=''; });
+document.getElementById('exportBtn').addEventListener('click', ()=>{
+  exportTableCSV(tbody, document.getElementById('rateSel').value, 'cabwizz_rate_tester_results.csv');
+});
+document.getElementById('applyFilterBtn').addEventListener('click', ()=>{ applyFilter(); });
+document.getElementById('exportProblemsBtn').addEventListener('click', ()=>{
+  exportTableCSV(ptbody, document.getElementById('rateSel').value, 'cabwizz_rate_tester_PROBLEMS.csv');
+});
+document.getElementById('rateSel').addEventListener('change', ()=>{ setHead(document.getElementById('rateSel').value); run(); });
+
+// init
+setHead('rate1');
+</script>
+</body>
+</html>

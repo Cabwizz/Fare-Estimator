@@ -3,28 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CabWizz RateTester — v2 (R3 congestion tuned)</title>
+<title>CabWizz Simple Compare Tester</title>
 <style>
-  :root{--ok:#0a7;--warn:#f8a100;--danger:#d33;--stroke:#e5e7eb}
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:18px;background:#f7f7f8;color:#111}
+  :root{--ok:#0a7;--warn:#f8a100;--danger:#b00020;--stroke:#e5e7eb}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:16px;background:#f7f7f8;color:#111}
   h1{font-size:18px;margin:0 0 10px}
   .row{display:flex;gap:10px;flex-wrap:wrap}
   .card{background:#fff;border:1px solid var(--stroke);border-radius:14px;padding:14px;margin:10px 0;box-shadow:0 1px 0 rgba(0,0,0,.05)}
-  label{font-size:13px;color:#333;margin-right:6px}
+  label{font-size:13px;margin-right:6px}
   select,input,textarea,button{font-size:14px;border:1px solid var(--stroke);border-radius:10px;padding:10px;background:#fff}
-  textarea{width:100%;min-height:120px}
+  textarea{width:100%;min-height:110px}
   button{cursor:pointer}
   .ok{background:#0a7;color:#fff;border:none}
   .outline{background:#fff}
   table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{border-bottom:1px solid #eee;padding:8px;text-align:left;vertical-align:top}
+  th,td{border-bottom:1px solid #eee;padding:8px;text-align:left}
   th{background:#fafafa;position:sticky;top:0}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-  .pill{font-size:11px;background:#eaf8f2;color:#045a36;border-radius:999px;padding:2px 8px;margin-left:8px}
+  .pill{font-size:11px;background:#eef7ff;color:#144a9e;border-radius:999px;padding:2px 8px;margin-left:8px}
+  .diff-over{color:#045a36;font-weight:600}
+  .diff-under{color:var(--danger);font-weight:600}
+  .diff-same{color:#333;font-weight:600}
 </style>
 </head>
 <body>
-  <h1>CabWizz RateTester <span class="pill">v2 — R3 congestion tuned</span></h1>
+  <h1>CabWizz Simple Compare Tester <span class="pill">Formula A/B/C side-by-side</span></h1>
 
   <div class="card">
     <div class="row">
@@ -37,23 +40,8 @@
         </select>
       </div>
       <div>
-        <label for="errThresh">Error ≥ (￡)</label>
-        <input id="errThresh" type="number" step="0.1" value="1.50" style="width:90px">
-      </div>
-      <div>
-        <label for="filterMode">Filter</label>
-        <select id="filterMode">
-          <option value="all">All rows</option>
-          <option value="problems">Problems (|error| ≥ threshold)</option>
-          <option value="under">Under only</option>
-          <option value="over">Over only</option>
-          <option value="slow6">Slow (mins/mi ≥ 6)</option>
-          <option value="slow8">Very slow (mins/mi ≥ 8)</option>
-        </select>
-      </div>
-      <div>
-        <label for="minsMiMin">mins/mi ≥</label>
-        <input id="minsMiMin" type="number" step="0.1" value="">
+        <label for="tol">“Same” tolerance (￡)</label>
+        <input id="tol" type="number" step="0.1" value="0.60" style="width:100px">
       </div>
     </div>
 
@@ -61,20 +49,22 @@
       <label>Paste CSV (minutes,miles,meter) — header optional</label>
       <textarea id="csvArea" placeholder="minutes,miles,meter&#10;20,1.7,29.8&#10;16,2.0,22.8"></textarea>
       <div class="row" style="margin-top:8px">
-        <button class="ok" id="addPasteBtn">Add pasted rows</button>
-        <button class="outline" id="clearRowsBtn">Clear table</button>
+        <button class="ok" id="addBtn">Add pasted rows</button>
+        <button class="outline" id="clearBtn">Clear table</button>
         <button class="outline" id="exportBtn">Export results CSV</button>
       </div>
     </div>
   </div>
 
-  <div class="card" style="overflow:auto; max-height:65vh">
+  <div class="card" style="overflow:auto;max-height:68vh">
     <table id="tbl">
       <thead>
         <tr>
-          <th>#</th><th>Minutes</th><th>Miles</th><th>Meter</th>
-          <th>Core</th><th>Lower</th><th>Upper</th>
-          <th>Error</th><th>mins/mi</th><th>Flag</th>
+          <th>#</th>
+          <th class="mono">Meter</th>
+          <th class="mono">Core A</th><th>Diff A</th>
+          <th class="mono">Core B</th><th>Diff B</th>
+          <th class="mono">Core C</th><th>Diff C</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -82,133 +72,100 @@
   </div>
 
 <script>
-/* ---------- MODEL (same as your previous tester, except R3 congestion tuned) ---------- */
-const INC = 0.20;
-const BASE = 4.20;
-
-const profiles = {
-  r1: {
-    pmTiers: [ // per-minute
-      {up:12, v:0.30}, {up:25, v:0.36}, {v:0.40}
-    ],
-    perMile: (m, t)=> 4.10,            // simplified tester profile
-    congK: 0.22, congH: 6.2            // congestion lift (minutes per mile threshold)
-  },
-  r2: {
-    pmTiers: [
-      {up:6, v:0.31}, {up:12, v:0.33}, {up:25, v:0.40}, {v:0.60}
-    ],
-    perMile: (m, t)=> 4.35,
-    congK: 0.24, congH: 6.0
-  },
-  r3: {
-    pmTiers: [
-      {up:12, v:0.58}, {up:30, v:0.62}, {v:0.44}
-    ],
-    perMile: (m, t)=> 3.90,
-    // >>> TUNED (only change): stronger congestion & tiny threshold nudge
-    congK: 0.35,   // was 0.26
-    congH: 6.0     // was 5.8
-  }
-};
-
-function roundTo(x,inc){ return Math.round(x/inc)*inc; }
-function floorTo(x,inc){ return Math.floor(x/inc)*inc; }
-function ceilTo (x,inc){ return Math.ceil (x/inc)*inc; }
-
+/* ====== Minimal model used in your tester (shared across A/B/C) ====== */
+const INC=0.20, BASE=4.20;
+function roundTo(x,inc){return Math.round(x/inc)*inc;}
 function minutePart(tiers, mins){
-  let rem = mins, used = 0, sum = 0;
+  let rem=mins, used=0, sum=0;
   for(const t of tiers){
-    if(t.up==null){ sum += rem * t.v; break; }
-    const span = Math.max(0, Math.min(rem, t.up - used));
-    sum += span * t.v; rem -= span; used += span;
+    if(t.up==null){ sum+=rem*t.v; break; }
+    const span=Math.max(0, Math.min(rem, t.up-used));
+    sum+=span*t.v; rem-=span; used+=span;
     if(rem<=0) break;
   }
   return sum;
 }
-
-// common fare-size tolerance bands
-function clampByFare(core){
-  if(core<=20) return 1.00;
-  if(core<=40) return 1.20;
-  if(core<=60) return 1.40;
-  return 1.60;
+function rangeClamp(core){
+  // symmetrical clamp used only for display rounding of “lower/upper”
+  let tol=1.0; if(core>20) tol=1.2; if(core>40) tol=1.4; if(core>60) tol=1.6;
+  return {lo: roundTo(core-tol, INC), hi: roundTo(core+tol, INC)};
 }
-
-function buildRange(core){
-  const tol = clampByFare(core);
-  let lo = floorTo(core - tol, INC);
-  let hi =  ceilTo (core + tol, INC);
-  // tiny-trip absolute floor (keeps display sane when nothing typed)
-  lo = Math.max(lo, 6.20);
-  return {lo, hi};
-}
-
-function estimateSimple(rateKey, mins, miles){
-  const p = profiles[rateKey];
-
-  const mPart = minutePart(p.pmTiers, mins);
-  const perMi = p.perMile(miles, mins);
-
-  // Congestion uplift: only when trip is slow (mins/mi above threshold)
-  const speedRatio = miles>0 ? (mins/miles) : 0;
-  const extra = Math.max(0, (speedRatio - p.congH)) * p.congK * miles;
-
+function estimateProfile(P, mins, miles){
+  const mPart = minutePart(P.pmTiers, mins);
+  const perMi = (typeof P.perMile==='function') ? P.perMile(miles, mins) : P.perMile;
+  // congestion uplift
+  const mm = miles>0 ? mins/miles : 0;
+  const extra = Math.max(0, (mm - P.congH)) * P.congK * miles;
   let core = BASE + mPart + perMi*miles + extra;
   core = roundTo(core, INC);
-
-  const {lo,hi} = buildRange(core);
-  return {core, lo, hi, extra};
+  const r = rangeClamp(core);
+  return {core, lower:r.lo, upper:r.hi};
 }
 
-/* ---------- UI + TABLE ---------- */
-let rows = []; // {mins, miles, meter}
+/* ====== Define three “formula versions” per rate ======
+   A = your current best
+   B = “softer” congestion (helps long slow trips avoid over-bumping)
+   C = “stronger” congestion or slightly higher per-mile (to try alternatives)
+*/
+const profiles = {
+  r1: {
+    A:{ pmTiers:[{up:12,v:0.30},{up:25,v:0.36},{v:0.40}], perMile:4.10, congK:0.22, congH:6.2 },
+    B:{ pmTiers:[{up:12,v:0.30},{up:25,v:0.36},{v:0.40}], perMile:4.05, congK:0.18, congH:6.4 },
+    C:{ pmTiers:[{up:12,v:0.30},{up:25,v:0.36},{v:0.40}], perMile:4.15, congK:0.24, congH:6.0 }
+  },
+  r2: {
+    A:{ pmTiers:[{up:6,v:0.31},{up:12,v:0.33},{up:25,v:0.40},{v:0.60}], perMile:4.35, congK:0.24, congH:6.0 },
+    B:{ pmTiers:[{up:6,v:0.31},{up:12,v:0.33},{up:25,v:0.40},{v:0.60}], perMile:4.25, congK:0.20, congH:6.2 },
+    C:{ pmTiers:[{up:6,v:0.31},{up:12,v:0.33},{up:25,v:0.40},{v:0.60}], perMile:4.45, congK:0.28, congH:5.8 }
+  },
+  r3: {
+    // Your latest tuned R3 (we strengthened congestion)
+    A:{ pmTiers:[{up:12,v:0.58},{up:30,v:0.62},{v:0.44}], perMile:3.90, congK:0.35, congH:6.0 },
+    B:{ pmTiers:[{up:12,v:0.58},{up:30,v:0.62},{v:0.44}], perMile:3.85, congK:0.30, congH:6.2 },
+    C:{ pmTiers:[{up:12,v:0.58},{up:30,v:0.62},{v:0.44}], perMile:3.95, congK:0.40, congH:5.8 }
+  }
+};
 
-const $ = sel => document.querySelector(sel);
+/* ====== UI ====== */
+const $ = s=>document.querySelector(s);
+let rows=[]; // {mins,miles,meter}
 const tbody = $('#tbody');
+
+function labelDiff(meter, core, tol){
+  const diff = +(meter - core).toFixed(2); // positive = meter>core
+  if(Math.abs(diff) < tol) return {txt:'same', cls:'diff-same', diff};
+  if(core > meter) return {txt:'core over meter', cls:'diff-over', diff:-diff}; // show positive amount over
+  return {txt:'core below meter', cls:'diff-under', diff};
+}
 
 function render(){
   const rate = $('#ratePick').value;
-  const th = Number($('#errThresh').value||0);
-  const fMode = $('#filterMode').value;
-  const minsMiMin = Number($('#minsMiMin').value||0);
+  const tol  = Number($('#tol').value||0.6);
+  const Pset = profiles[rate];
 
-  tbody.innerHTML = '';
-  let idx = 0;
+  tbody.innerHTML='';
+  rows.forEach((r, i)=>{
+    const a = estimateProfile(Pset.A, r.mins, r.miles);
+    const b = estimateProfile(Pset.B, r.mins, r.miles);
+    const c = estimateProfile(Pset.C, r.mins, r.miles);
 
-  rows.forEach((r,i)=>{
-    const est = estimateSimple(rate, r.mins, r.miles);
-    const err = roundTo(r.meter - est.core, 0.01);
-    const mm  = r.miles>0 ? (r.mins/r.miles) : 0;
-    let flag = [];
-    if(err>=th) flag.push('over');
-    if(err<=-th) flag.push('under');
-    if(mm>=6) flag.push('slow');
-    if(mm>=8) flag.push('very-slow');
+    const la = labelDiff(r.meter, a.core, tol);
+    const lb = labelDiff(r.meter, b.core, tol);
+    const lc = labelDiff(r.meter, c.core, tol);
 
-    // filtering
-    let show = true;
-    if(fMode==='problems') show = Math.abs(err)>=th;
-    else if(fMode==='under') show = err<=-th;
-    else if(fMode==='over') show = err>=th;
-    else if(fMode==='slow6') show = mm>=6;
-    else if(fMode==='slow8') show = mm>=8;
-    if(minsMiMin && !(mm>=minsMiMin)) show = false;
-
-    if(!show) return;
-
-    const tr = document.createElement('tr');
+    const tr=document.createElement('tr');
     tr.innerHTML = `
-      <td>${++idx}</td>
-      <td>${r.mins}</td>
-      <td>${r.miles.toFixed(1)}</td>
+      <td>${i+1}</td>
       <td class="mono">£${r.meter.toFixed(2)}</td>
-      <td class="mono">£${est.core.toFixed(2)}</td>
-      <td class="mono">£${est.lo.toFixed(2)}</td>
-      <td class="mono">£${est.hi.toFixed(2)}</td>
-      <td class="mono" style="color:${err>0?'#045a36':err<0?'#b00020':'#111'}">${err>0?'+':''}${err.toFixed(2)}</td>
-      <td class="mono">${mm? mm.toFixed(2):''}</td>
-      <td>${flag.join(', ')}</td>
+
+      <td class="mono">£${a.core.toFixed(2)}</td>
+      <td class="${la.cls}">${la.txt} (${la.diff>0?'+':''}${la.diff.toFixed(2)})</td>
+
+      <td class="mono">£${b.core.toFixed(2)}</td>
+      <td class="${lb.cls}">${lb.txt} (${lb.diff>0?'+':''}${lb.diff.toFixed(2)})</td>
+
+      <td class="mono">£${c.core.toFixed(2)}</td>
+      <td class="${lc.cls}">${lc.txt} (${lc.diff>0?'+':''}${lc.diff.toFixed(2)})</td>
     `;
     tbody.appendChild(tr);
   });
@@ -216,13 +173,11 @@ function render(){
 
 function parseCSV(txt){
   const lines = txt.trim().split(/\r?\n/);
-  const out = [];
+  const out=[];
   for(let i=0;i<lines.length;i++){
-    const line = lines[i].trim();
-    if(!line) continue;
-    const parts = line.split(/,|\t/).map(s=>s.trim());
-    // skip header
-    if(i===0 && /min|mins|minutes/i.test(parts[0])) continue;
+    const parts = lines[i].trim().split(/,|\t/).map(s=>s.trim());
+    if(!parts[0]) continue;
+    if(i===0 && /min|mins|minutes/i.test(parts[0])) continue; // skip header
     const mins = Number(parts[0]);
     const miles= Number(parts[1]);
     const meter= Number(String(parts[2]).replace(/[£]/g,''));
@@ -233,49 +188,43 @@ function parseCSV(txt){
   return out;
 }
 
-/* ---------- events ---------- */
-$('#addPasteBtn').addEventListener('click', ()=>{
-  const add = parseCSV($('#csvArea').value);
-  rows.push(...add);
+/* events */
+$('#addBtn').addEventListener('click', ()=>{
+  rows.push(...parseCSV($('#csvArea').value));
   render();
 });
-
-$('#clearRowsBtn').addEventListener('click', ()=>{
-  if(confirm('Clear all rows?')){ rows = []; render(); }
+$('#clearBtn').addEventListener('click', ()=>{
+  if(confirm('Clear all rows?')){ rows=[]; render(); }
 });
-
-['ratePick','errThresh','filterMode','minsMiMin'].forEach(id=>{
-  $('#'+id).addEventListener('input', render);
-});
+['ratePick','tol'].forEach(id=> $('#'+id).addEventListener('input', render));
 
 $('#exportBtn').addEventListener('click', ()=>{
-  const rate = $('#ratePick').value;
-  const out = [['minutes','miles','meter','core','lower','upper','error','mins_per_mile','rate']];
+  const rate = $('#ratePick').value.toUpperCase();
+  const tol  = Number($('#tol').value||0.6);
+  const Pset = profiles[$('#ratePick').value];
+  const lines = [['minutes','miles','meter',
+                  'core_A','diff_A_label','diff_A_value',
+                  'core_B','diff_B_label','diff_B_value',
+                  'core_C','diff_C_label','diff_C_value','rate']];
   rows.forEach(r=>{
-    const e = estimateSimple(rate, r.mins, r.miles);
-    const err = (r.meter - e.core);
-    const mm = r.miles? (r.mins/r.miles):'';
-    out.push([r.mins,r.miles,r.meter.toFixed(2),e.core.toFixed(2),e.lo.toFixed(2),e.hi.toFixed(2),err.toFixed(2), (mm?mm.toFixed(2):''), rate.toUpperCase()]);
+    const a=estimateProfile(Pset.A,r.mins,r.miles), la=labelDiff(r.meter,a.core,tol);
+    const b=estimateProfile(Pset.B,r.mins,r.miles), lb=labelDiff(r.meter,b.core,tol);
+    const c=estimateProfile(Pset.C,r.mins,r.miles), lc=labelDiff(r.meter,c.core,tol);
+    lines.push([r.mins,r.miles,r.meter.toFixed(2),
+                a.core.toFixed(2),la.txt,la.diff.toFixed(2),
+                b.core.toFixed(2),lb.txt,lb.diff.toFixed(2),
+                c.core.toFixed(2),lc.txt,lc.diff.toFixed(2),rate]);
   });
-  const csv = out.map(a=>a.join(',')).join('\r\n');
-  const blob = new Blob([csv],{type:'text/csv'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'cabwizz_rate_tester_results.csv';
+  const csv = lines.map(r=>r.join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='cabwizz_simple_compare_results.csv';
   a.click(); URL.revokeObjectURL(a.href);
 });
 
-/* demo seed (optional): remove if you like */
-rows = [
-  {mins:38,miles:1.5,meter:37.40},
-  {mins:20,miles:1.7,meter:29.80},
-  {mins:16,miles:2.0,meter:22.80},
-  {mins:26,miles:2.6,meter:22.80},
-  {mins:20,miles:4.5,meter:33.60},
-  {mins:20,miles:4.5,meter:33.60},
-  {mins:25,miles:6.4,meter:43.20},
-  {mins:40,miles:6.4,meter:53.80}
-];
+/* seed a couple rows (you can delete) */
+rows=[{mins:38,miles:1.5,meter:37.40},{mins:20,miles:4.5,meter:33.60},{mins:27,miles:5.9,meter:42.40}];
 render();
 </script>
 </body>

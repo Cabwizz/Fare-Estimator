@@ -1,4 +1,5 @@
-const CACHE = 'cabwizz-cache-v33'; // bump when you change html/js
+// CabWizz Fare Estimator — Service Worker v3.4 (R1/R2/R3 tuned)
+const CACHE = 'cabwizz-cache-v34'; // bump this each release
 const ASSETS = [
   './',
   'index.html',

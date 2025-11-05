@@ -5,6 +5,17 @@
   "display": "standalone",
   "background_color": "#f7f7f8",
   "theme_color": "#0a7",
-  "description": "CabWizz Fare Estimator — v3.3 (R3 tuned)",
-  "icons": []
+  "description": "CabWizz Fare Estimator — v3.4 (R1/R2/R3 tuned)",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
 }

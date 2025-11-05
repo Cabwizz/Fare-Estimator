@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#0a7">
-  <title>CabWizz Fare Estimator — v3.4 (R3 uses R2 for 5mi+)</title>
+  <title>CabWizz Fare Estimator — v3.4 (R1/R2/R3 tuned)</title>
   <style>
     :root{--ok:#0a7;--warn:#f8a100;--info:#1869ff;--danger:#d33;--stroke:#d1d1d6}
     *{box-sizing:border-box}
@@ -39,7 +39,7 @@
 <body>
   <h1>
     CabWizz Fare Estimator
-    <span class="badge" id="appVersion">v3.4 (R3→R2 for 5mi+)</span>
+    <span class="badge" id="appVersion">v3.4 (R1/R2/R3 tuned)</span>
   </h1>
 
   <div class="card">
@@ -121,7 +121,7 @@
 
 <script>
 /* ========= CONFIG ========= */
-const APP_VERSION = 'v3.4 (R3→R2 for 5mi+)';
+const APP_VERSION = 'v3.4 (R1/R2/R3 tuned)';
 
 const cfg = {
   baseFare: 4.20,
@@ -136,89 +136,88 @@ const cfg = {
     { max: 1e9, lower:{fixed:2.00,pct:0.02}, upper:{fixed:2.50,pct:0.04} },
   ],
 
-  /* --- Rate 1 (your last working profile) --- */
+  /* --- Rate 1 (R1_FIX_2025_11_05) --- */
   rate1:{
-    perMinute:[{upTo:12,v:0.30},{upTo:25,v:0.36},{v:0.40}],
+    perMinute:[
+      { upTo: 6,  v: 0.29 },
+      { upTo: 12, v: 0.34 },
+      { upTo: 25, v: 0.38 },
+      { v: 0.46 }
+    ],
     perMileRules:[
-      {when:{mMin:4.0,mMax:4.8,tMin:31,tMax:45}, v:4.30},
-      {when:{mMin:4.0,mMax:4.8,tMin:16,tMax:30}, v:3.85},
-      {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:3.65},
-      {when:{mMin:25}, v:3.80},
-      {when:{mMin:15}, v:3.95},
-      {when:{mMin:7},  v:4.05},
-      {when:{mMax:6.0}, v:3.60},
-      {v:4.29}
+      { when:{ mMax:2.0 }, v:3.60 },
+      { when:{ mMin:2.0, mMax:3.5 }, v:3.75 },
+      { when:{ mMin:3.5, mMax:4.8 }, v:3.90 },
+      { when:{ mMin:4.8, mMax:7.0 }, v:4.00 },
+      { when:{ mMin:7.0, mMax:15 }, v:4.08 },
+      { when:{ mMin:15,  mMax:25 }, v:3.95 },
+      { v:3.80 }
     ],
     offsets:[
-      {when:{mMin:3.0,mMax:5.0,tMin:18,tMax:40}, d:1.20}
+      { when:{ mMax:2.2, tMin:12, tMax:20 }, d: 1.20 },
+      { when:{ mMin:1.6, mMax:2.0, tMin:18, tMax:22 }, d: 2.00 },
+      { when:{ mMin:3.8, mMax:4.2, tMin:20, tMax:24 }, d:-1.00 }
     ],
-    longTrim:{ enabled:true, when:{mMin:35,tMin:90}, pct:0.03, minAbs:2.00 }
+    longTrim:{ enabled:true, when:{ mMin:35, tMin:90 }, pct:0.03, minAbs:2.00 }
   },
 
-  /* --- Rate 2 (your stable one) --- */
+  /* --- Rate 2 (R2_FIX_2025_11_05, with slow-short uplift) --- */
   rate2:{
-    perMinute:[{upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.60}],
+    perMinute:[ {upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.60} ],
     perMileRules:[
-      {when:{mMin:4.1,mMax:4.6,tMin:16,tMax:19}, v:4.75},
-      {when:{mMin:3.90,mMax:4.05,tMin:20,tMax:22}, v:4.55},
-      {when:{mMin:3.80,mMax:4.10,tMin:23,tMax:26}, v:4.70},
-      {when:{mMin:4.20,mMax:4.50,tMin:20,tMax:26}, v:5.35},
-      {when:{mMin:4.20,mMax:4.50,tMin:27,tMax:40}, v:5.15},
-      {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, v:3.85},
-      {when:{mMin:18,mMax:25,tMin:55,tMax:70},  v:4.08},
-      {when:{mMin:25}, v:4.12},
-      {when:{mMin:7.5}, v:4.15},
-      {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:4.00},
-      {when:{mMin:1.8,mMax:2.2,tMin:10,tMax:20}, v:3.65},
-      {v:4.29}
+      { when:{ mMax:1.0 }, v:3.60 },
+      { when:{ mMin:1.0, mMax:2.2 }, v:3.75 },
+      { when:{ mMin:2.2, mMax:3.5 }, v:3.95 },
+      { when:{ mMin:3.5, mMax:4.6 }, v:4.15 },
+      { when:{ mMin:4.6, mMax:7.5 }, v:4.35 },
+      { when:{ mMin:7.5, mMax:10 }, v:4.05 },
+      { when:{ mMin:10 }, v:4.10 }
     ],
     offsets:[
-      {when:{mMax:1.0}, d:0.00},
-      {when:{mMin:1.5,mMax:2.8,tMin:12,tMax:20}, d:1.60},
-      {when:{mMax:1.2,tMin:6,tMax:13}, d:0.40},
-      {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, d:-1.20},
-      {when:{mMin:18,mMax:21,tMin:45,tMax:60}, d:-1.20}
+      // short & slow (fix 21m @1.8 deficit etc.)
+      { when:{ mMin:1.7, mMax:1.9, tMin:20, tMax:22 }, d: 5.00 },
+      { when:{ mMin:1.5, mMax:2.0, tMin:12, tMax:18 }, d: 1.20 },
+
+      // mid softeners where we saw overestimates
+      { when:{ mMin:6.0, mMax:7.0, tMin:26, tMax:35 }, d:-1.40 },
+      { when:{ mMin:7.5, mMax:10.0, tMin:40, tMax:55 }, d:-1.20 },
+
+      // tiny-trip tidy
+      { when:{ mMax:0.8, tMax:5 }, d:-0.40 }
     ],
-    longTrim:{ enabled:true, when:{mMin:25,tMin:65}, pct:0.05, minAbs:3.50 }
+    longTrim:{ enabled:true, when:{ mMin:25, tMin:65 }, pct:0.05, minAbs:3.50 }
   },
 
-  /* --- Rate 3 (same as before BUT 5mi+ will call R2) --- */
+  /* --- Rate 3 (R3 tuned v3.4) --- */
   rate3: {
+    // minutes: boost short-slow, flatten mid a touch
     perMinute: [
-      { upTo: 12, v: 0.58 },
-      { upTo: 30, v: 0.62 },
-      { v: 0.44 }
+      { upTo: 10, v: 0.60 },
+      { upTo: 20, v: 0.64 },
+      { upTo: 35, v: 0.55 },
+      { v: 0.45 }
     ],
     perMileRules: [
-      { when: { mMin: 3.3, mMax: 3.6, tMin: 14, tMax: 22 }, v: 3.55 },
-      { when: { mMin: 3.3, mMax: 3.6, tMin: 23, tMax: 28 }, v: 3.60 },
-      { when: { mMin: 4.5, mMax: 5.0, tMin: 16, tMax: 22 }, v: 3.70 },
-      { when: { mMin: 4.5, mMax: 5.0, tMin: 23, tMax: 32 }, v: 3.55 },
-      { when: { mMin: 5.0, mMax: 6.0, tMin: 18, tMax: 24 }, v: 3.45 },
-      { when: { mMin: 5.0, mMax: 6.0, tMin: 25, tMax: 34 }, v: 3.38 },
-      { when: { mMin: 6.0, mMax: 6.6, tMin: 22, tMax: 32 }, v: 3.35 },
-      { when: { mMin: 7.5, mMax: 9.5, tMin: 26, tMax: 36 }, v: 3.25 },
-      { when: { mMin: 7.5, mMax: 9.5, tMin: 37, tMax: 46 }, v: 3.10 },
-      { v: 4.00 }
+      { when:{ mMax:3.0 }, v: 3.95 },                        // 0–3 mi
+      { when:{ mMin:3.0, mMax:5.0 }, v: 3.65 },              // 3–5 mi
+      { when:{ mMin:5.0, mMax:6.5 }, v: 3.40 },              // 5–6.5 mi (soften)
+      { when:{ mMin:6.6, mMax:9.0 }, v: 3.20 },              // 6.6–9.0 mi (further soften)
+      { v: 3.10 }                                            // 9.1+ mi
     ],
     offsets:[
-      {when:{mMin:9.0,mMax:9.2,tMin:36,tMax:40}, d: -20.40},
-      {when:{mMin:8.5,mMax:8.7,tMin:26,tMax:30}, d: -8.80},
-      {when:{mMin:7.8,mMax:8.0,tMin:32,tMax:36}, d: -8.40},
-      {when:{mMin:6.3,mMax:6.5,tMin:23,tMax:27}, d: -5.40},
-      {when:{mMin:5.8,mMax:6.0,tMin:26,tMax:28}, d: -4.80},
-      {when:{mMin:5.5,mMax:5.7,tMin:19,tMax:21}, d: -4.00},
-      {when:{mMin:4.9,mMax:5.1,tMin:25,tMax:27}, d: -4.80},
-      {when:{mMin:4.7,mMax:4.9,tMin:26,tMax:28}, d: -3.60},
+      // Fix short slow journeys (under-valued)
+      { when:{ mMin:1.5, mMax:1.9, tMin:18, tMax:25 }, d: 6.00 },
+      { when:{ mMin:2.0, mMax:2.3, tMin:12, tMax:18 }, d: 5.00 },
 
-      {when:{mMax:0.5,tMax:5}, d:-0.60},
-      {when:{mMax:0.8,tMax:5}, d:-0.40},
-      {when:{mMin:1.8,mMax:2.2,tMin:9,tMax:12}, d:-1.20},
-      {when:{mMin:5.5,mMax:6.3,tMin:28,tMax:40}, d:-1.40},
-      {when:{mMin:18,mMax:20,tMin:45,tMax:60}, d:1.20},
-      {when:{mMin:4.0,mMax:5.6,tMin:15,tMax:35}, d:-0.80},
-      {when:{mMin:6.5,mMax:8.0,tMin:22,tMax:40}, d:-1.00}
-    ]
+      // Trim long mid-band (over-valued 6–9 mi @ ~30–40m)
+      { when:{ mMin:6.0, mMax:7.0, tMin:25, tMax:35 }, d: -3.00 },
+      { when:{ mMin:7.5, mMax:9.2, tMin:26, tMax:38 }, d: -5.00 },
+
+      // Minor edge smoothing you liked
+      { when:{ mMax:0.8, tMax:5 }, d:-0.40 },
+      { when:{ mMin:9.5, mMax:10.5, tMin:40, tMax:50 }, d:1.20 }
+    ],
+    longTrim:{ enabled:true, when:{ mMin:25, tMin:65 }, pct:0.05, minAbs:3.50 }
   }
 };
 
@@ -260,10 +259,10 @@ function minutePart(tiers, mins){
   return sum;
 }
 function sumOffsets(arr, miles, mins){
-  return arr.reduce((s,o)=>s+(matches(o.when,miles,mins)?o.d:0),0);
+  return (arr||[]).reduce((s,o)=>s+(matches(o.when,miles,mins)?o.d:0),0);
 }
 
-/* ========= range builder ========= */
+/* ========= range builder (with tolerance clamp) ======== */
 function baseBand(miles){
   return cfg.rangeBands.find(x=>miles<=x.max) || cfg.rangeBands[cfg.rangeBands.length-1];
 }
@@ -283,21 +282,24 @@ function clampByFareSize(core, lower, upper){
   }
   return {lower, upper};
 }
-function buildRange(core, miles, mins, rateKey){
+function buildRange(core, miles, mins){
   const b = baseBand(miles);
   let lowerAdj = Math.max(b.lower.fixed, core*b.lower.pct);
   let upperAdj = Math.max(b.upper.fixed, core*b.upper.pct);
 
+  // very short (≤1.0 mi): keep tight-ish
   if(miles<=1.0){
     lowerAdj = Math.min(lowerAdj, 1.00);
     upperAdj = Math.min(Math.max(upperAdj, 1.20), 1.80);
   }
 
+  // time-heavy short trips (≤2.5 mi & ≥15 min): widen a touch
   if(miles<=2.5 && mins>=15){
     lowerAdj = Math.max(lowerAdj*1.05, lowerAdj+0.30);
     upperAdj = Math.max(upperAdj*1.20, upperAdj+0.80);
   }
 
+  // long & slow (≥6 mi & ≥35 min): more upper room
   if(miles>=6 && mins>=35){
     upperAdj = Math.max(upperAdj*1.12, upperAdj+0.80);
   }
@@ -305,19 +307,20 @@ function buildRange(core, miles, mins, rateKey){
   let lower = floorTo(roundTo(core - lowerAdj, cfg.inc), cfg.inc);
   let upper = ceilTo (roundTo(core + upperAdj, cfg.inc), cfg.inc);
 
+  // clamp to global tolerance
   const clamped = clampByFareSize(core, lower, upper);
   lower = clamped.lower;
   upper = clamped.upper;
 
+  // absolute floor for tiny trips
   if(miles<=0.8){
     const absFloor = 6.20;
     if(lower < absFloor) lower = roundTo(absFloor, cfg.inc);
   }
-
   return {lower, upper};
 }
 
-/* ========= long trim ========= */
+/* ========= long-trim ========= */
 function longTrim(core, trim, miles, mins){
   if(!trim||!trim.enabled) return core;
   if(!matches(trim.when,miles,mins)) return core;
@@ -326,7 +329,7 @@ function longTrim(core, trim, miles, mins){
   return roundTo(rounded - dec, cfg.inc);
 }
 
-/* ========= start/end ========= */
+/* ========= start/end helpers ========= */
 function parseTimeToMinutes(t){
   if(!t || !/^\d{2}:\d{2}$/.test(t)) return null;
   const [H,M] = t.split(':').map(Number);
@@ -349,37 +352,28 @@ function computeFromStartEnd(){
   saveForm();
 }
 
-/* ========= estimation ========= */
-/* small helper so R3 can borrow R2 */
-function estimateCore(rateKey, mins, miles){
+/* ========= fare core ========= */
+function estimate(rateKey, mins, miles){
   const r = cfg[rateKey];
   const mPart = minutePart(r.perMinute, mins);
   const perMile = pickPerMile(r.perMileRules, miles, mins);
-  let core = cfg.baseFare + mPart + perMile*miles + sumOffsets(r.offsets||[], miles, mins);
+  let core = cfg.baseFare + mPart + perMile*miles + sumOffsets(r.offsets, miles, mins);
 
-  if(rateKey==='rate3' && miles>=3 && miles<=7 && mins>30){
+  // (Keep) rate3 extra minute uplift for 3–7 mi, >30m
+  if (rateKey==='rate3' && miles>=3 && miles<=7 && mins>30){
     const k = 0.20 + 0.015*miles;
     const extra = roundTo(k * (mins - 30), cfg.inc);
     core += extra;
   }
 
   if(r.longTrim) core = longTrim(core, r.longTrim, miles, mins);
-  core = roundTo(core, cfg.inc);
 
-  const rng = buildRange(core, miles, mins, rateKey);
+  core = roundTo(core, cfg.inc);
+  const rng = buildRange(core, miles, mins);
   return { core, lower:rng.lower, upper:rng.upper };
 }
 
-function estimate(rateKey, mins, miles){
-  // 👇 your request: R3 copies R2 for 5mi+
-  if (rateKey === 'rate3' && miles >= 5) {
-    const r2est = estimateCore('rate2', mins, miles);
-    return r2est;
-  }
-  return estimateCore(rateKey, mins, miles);
-}
-
-/* ========= export/log ========= */
+/* ========= export/log stuff ========= */
 const KEY='cabwizz_log_v1';
 function loadLog(){ try{ return JSON.parse(localStorage.getItem(KEY)||'[]'); }catch(e){ return [] } }
 function saveLog(rows){ localStorage.setItem(KEY, JSON.stringify(rows)); renderLog(); }
@@ -420,7 +414,7 @@ function exportCSV(){
   a.download='cabwizz_journeys.csv'; a.click(); URL.revokeObjectURL(a.href);
 }
 
-/* ========= rate by time-of-day ========= */
+/* ========= rate time-of-day (kept) ========= */
 function rateNowLabelFor(startMinutes, weekday){
   const m = startMinutes; if(m==null) return 'Rate 1';
   const inR=(a,b)=> (m>=a && m<b); const R1='Rate 1',R2='Rate 2',R3='Rate 3';

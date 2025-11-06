@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CabWizz — Dual Rate Tester (Original vs Test)</title>
+<style>
+  :root{
+    --bg:#f7f7f8; --card:#fff; --bd:#e5e5ea;
+    --blue:#1869ff; /* OVER = blue */
+    --red:#d23636;  /* UNDER = red */
+    --near:#111;    /* within tolerance = black */
+  }
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);margin:12px;color:#111}
+  h1{font-size:18px;margin:0 0 10px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin:10px 0}
+  .controls{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+  @media (max-width:980px){.controls{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media (max-width:520px){.controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  label{font-size:12px;color:#444;display:block;margin-bottom:4px}
+  input,select,button,textarea{width:100%;font-size:14px;border-radius:12px;border:1px solid var(--bd);padding:10px;background:#fff}
+  textarea{min-height:110px}
+  button{font-weight:600;cursor:pointer}
+  .btn{background:#0a7;color:#fff;border:none}
+  .btn.alt{background:#1869ff}
+  .btn.gray{background:#fff;color:#111;border:1px solid var(--bd)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{border-bottom:1px solid #eee;padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#fafafa;position:sticky;top:0}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .over{color:var(--blue);font-weight:700}
+  .under{color:var(--red);font-weight:700}
+  .near{color:var(--near)}
+  .tiny{color:#666;font-size:12px;margin-top:6px}
+</style>
+</head>
+<body>
+  <h1>CabWizz — Dual Rate Tester (Original vs Test)</h1>
+
+  <div class="card">
+    <div class="controls">
+      <div>
+        <label>Rate</label>
+        <select id="rateSel">
+          <option value="rate1">Rate 1</option>
+          <option value="rate2">Rate 2</option>
+          <option value="rate3">Rate 3</option>
+        </select>
+      </div>
+      <div>
+        <label>Test Variant</label>
+        <select id="variantSel">
+          <option value="A">A — Current (1.00×)</option>
+          <option value="B" selected>B — Softer (0.97×)</option>
+          <option value="C">C — Stronger (1.03×)</option>
+        </select>
+      </div>
+      <div>
+        <label>Tolerance (±£)</label>
+        <input id="tol" type="number" step="0.1" value="0.60">
+      </div>
+      <div>
+        <label>Filter</label>
+        <select id="filterSel">
+          <option value="all" selected>All</option>
+          <option value="over_any">Over (either)</option>
+          <option value="under_any">Under (either)</option>
+          <option value="near_both">Near in both</option>
+        </select>
+      </div>
+      <div>
+        <label>Sort by |Δ vs Meter|</label>
+        <select id="sortSel">
+          <option value="none" selected>None</option>
+          <option value="orig_asc">Orig least → most</option>
+          <option value="orig_desc">Orig most → least</option>
+          <option value="test_asc">Test least → most</option>
+          <option value="test_desc">Test most → least</option>
+        </select>
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button class="btn" id="recalcBtn">Recalculate</button>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div>
+        <label>Paste CSV (minutes,miles,meter) — one per line</label>
+        <textarea id="pasteBox" placeholder="e.g. 20,3.4,27.00&#10;25,3.4,32.00"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn" id="addPasted">Add pasted rows</button>
+          <button class="btn gray" id="clearAll">Clear table</button>
+          <button class="btn alt" id="exportBtn">Export CSV</button>
+        </div>
+        <div class="tiny">Over = blue (estimator &gt; meter). Under = red (estimator &lt; meter). |Δ| ≤ tolerance = black.</div>
+      </div>
+      <div>
+        <label>Quick add (one row)</label>
+        <div class="row" style="grid-template-columns:repeat(3,1fr);gap:8px">
+          <div><input id="qMin" type="number" step="1" placeholder="Minutes"></div>
+          <div><input id="qMi" type="number" step="0.1" placeholder="Miles"></div>
+          <div><input id="qMeter" type="number" step="0.01" placeholder="Meter £"></div>
+        </div>
+        <button class="btn" id="addOne" style="margin-top:8px">Add row</button>
+        <p class="mono" style="margin-top:10px;color:#555">Tip: change Rate / Variant / Tolerance any time — table updates instantly.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="max-height:65vh;overflow:auto">
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Minutes</th>
+          <th>Miles</th>
+          <th>Meter</th>
+
+          <th>Core (Original)</th>
+          <th>Δ vs Meter (Orig)</th>
+
+          <th>Core (Test)</th>
+          <th>Δ vs Meter (Test)</th>
+
+          <th>Core Δ (Test−Orig)</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+<script>
+/* ===== Shared helpers ===== */
+const $ = id => document.getElementById(id);
+const r2 = x => Math.round(x*100)/100;
+const roundTo = (x,inc)=>Math.round(x/inc)*inc;
+const floorTo = (x,inc)=>Math.floor(x/inc)*inc;
+const ceilTo  = (x,inc)=>Math.ceil (x/inc)*inc;
+
+/* ===== Range model (same for both) ===== */
+const rangeModel = {
+  baseFare: 4.20, inc: 0.20,
+  bands: [
+    { max: 1.5, lower:{fixed:0.30,pct:0.02}, upper:{fixed:0.60,pct:0.05} },
+    { max: 2.5, lower:{fixed:0.60,pct:0.04}, upper:{fixed:1.00,pct:0.06} },
+    { max: 4.5, lower:{fixed:1.00,pct:0.04}, upper:{fixed:1.60,pct:0.06} },
+    { max: 6.5, lower:{fixed:1.60,pct:0.04}, upper:{fixed:2.00,pct:0.05} },
+    { max: 1e9, lower:{fixed:2.00,pct:0.02}, upper:{fixed:2.50,pct:0.04} },
+  ]
+};
+function baseBand(mi){
+  const b = rangeModel.bands.find(x=>mi<=x.max) || rangeModel.bands[rangeModel.bands.length-1];
+  return b;
+}
+function clampByFareSize(core, lower, upper){
+  if(core<=20){ lower=Math.min(lower, core-1.00); upper=Math.max(upper, core+1.00); }
+  else if(core<=40){ lower=Math.min(lower, core-1.20); upper=Math.max(upper, core+1.20); }
+  else if(core<=60){ lower=Math.min(lower, core-1.40); upper=Math.max(upper, core+1.40); }
+  else { lower=Math.min(lower, core-1.60); upper=Math.max(upper, core+1.60); }
+  return {lower,upper};
+}
+function buildRange(core, mi, mn){
+  const inc = rangeModel.inc;
+  const b = baseBand(mi);
+  let lowerAdj = Math.max(b.lower.fixed, core*b.lower.pct);
+  let upperAdj = Math.max(b.upper.fixed, core*b.upper.pct);
+
+  if(mi<=1.0){ lowerAdj = Math.min(lowerAdj,1.00); upperAdj = Math.min(Math.max(upperAdj,1.20),1.80); }
+  if(mi<=2.5 && mn>=15){ lowerAdj = Math.max(lowerAdj*1.05, lowerAdj+0.30); upperAdj = Math.max(upperAdj*1.20, upperAdj+0.80); }
+  if(mi>=6 && mn>=35){ upperAdj = Math.max(upperAdj*1.12, upperAdj+0.80); }
+
+  let lower = floorTo(roundTo(core - lowerAdj, inc), inc);
+  let upper = ceilTo (roundTo(core + upperAdj, inc), inc);
+
+  const cl = clampByFareSize(core, lower, upper);
+  lower = cl.lower; upper = cl.upper;
+
+  if(mi<=0.8 && lower<6.20) lower = roundTo(6.20, inc);
+  return {lower, upper};
+}
+
+/* ===== Original (index.html) estimator ===== */
+const cfgOriginal = {
+  baseFare: 4.20, inc: 0.20,
+  rate1:{
+    perMinute:[ {upTo:6,v:0.29},{upTo:12,v:0.34},{upTo:25,v:0.38},{v:0.46} ],
+    perMileRules:[ {when:{mMax:2.0},v:3.60},{when:{mMin:2.0,mMax:3.5},v:3.75},{when:{mMin:3.5,mMax:4.8},v:3.90},{when:{mMin:4.8,mMax:7.0},v:4.00},{when:{mMin:7.0,mMax:15},v:4.08},{when:{mMin:15,mMax:25},v:3.95},{v:3.80} ],
+    offsets:[ {when:{mMax:2.2,tMin:12,tMax:20}, d: 1.20},{when:{mMin:1.6,mMax:2.0,tMin:18,tMax:22}, d: 2.00},{when:{mMin:3.8,mMax:4.2,tMin:20,tMax:24}, d:-1.00} ],
+    longTrim:{ enabled:true, when:{ mMin:35, tMin:90 }, pct:0.03, minAbs:2.00 }
+  },
+  rate2:{
+    perMinute:[ {upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.60} ],
+    perMileRules:[ {when:{mMax:1.0},v:3.60},{when:{mMin:1.0,mMax:2.2},v:3.75},{when:{mMin:2.2,mMax:3.5},v:3.95},{when:{mMin:3.5,mMax:4.6},v:4.15},{when:{mMin:4.6,mMax:7.5},v:4.35},{when:{mMin:7.5,mMax:10},v:4.05},{when:{mMin:10},v:4.10} ],
+    offsets:[ {when:{mMin:1.7,mMax:1.9,tMin:20,tMax:22}, d: 5.00},{when:{mMin:1.5,mMax:2.0,tMin:12,tMax:18}, d: 1.20},{when:{mMin:6.0,mMax:7.0,tMin:26,tMax:35}, d:-1.40},{when:{mMin:7.5,mMax:10.0,tMin:40,tMax:55}, d:-1.20},{when:{mMax:0.8,tMax:5}, d:-0.40} ],
+    longTrim:{ enabled:true, when:{ mMin:25, tMin:65 }, pct:0.05, minAbs:3.50 }
+  },
+  rate3:{
+    perMinute:[ {upTo:10,v:0.60},{upTo:20,v:0.64},{upTo:35,v:0.55},{v:0.45} ],
+    perMileRules:[ {when:{mMax:3.0},v:3.95},{when:{mMin:3.0,mMax:5.0},v:3.65},{when:{mMin:5.0,mMax:6.5},v:3.40},{when:{mMin:6.6,mMax:9.0},v:3.20},{v:3.10} ],
+    offsets:[ {when:{mMin:1.5,mMax:1.9,tMin:18,tMax:25}, d: 6.00},{when:{mMin:2.0,mMax:2.3,tMin:12,tMax:18}, d: 5.00},{when:{mMin:6.0,mMax:7.0,tMin:25,tMax:35}, d:-3.00},{when:{mMin:7.5,mMax:9.2,tMin:26,tMax:38}, d:-5.00},{when:{mMax:0.8,tMax:5}, d:-0.40},{when:{mMin:9.5,mMax:10.5,tMin:40,tMax:50}, d:1.20} ],
+    longTrim:{ enabled:true, when:{ mMin:25, tMin:65 }, pct:0.05, minAbs:3.50 }
+  }
+};
+function matches(w, miles, mins){
+  if(!w) return true;
+  if(w.mMin!==undefined && miles < w.mMin) return false;
+  if(w.mMax!==undefined && miles > w.mMax) return false;
+  if(w.tMin!==undefined && mins  < w.tMin) return false;
+  if(w.tMax!==undefined && mins  > w.tMax) return false;
+  return true;
+}
+function pickPerMile(rules, miles, mins){
+  const r = rules.find(x=>matches(x.when,miles,mins));
+  return (r||rules[rules.length-1]).v;
+}
+function minutePart(tiers, mins){
+  let rem=mins, used=0, sum=0;
+  for(const t of tiers){
+    if(t.upTo==null){ sum+=rem*t.v; break; }
+    const span=Math.max(0, Math.min(rem, t.upTo-used));
+    sum += span*t.v; rem-=span; used+=span;
+    if(rem<=0) break;
+  }
+  return sum;
+}
+function sumOffsets(arr, miles, mins){
+  return (arr||[]).reduce((s,o)=>s+(matches(o.when,miles,mins)?o.d:0),0);
+}
+function longTrim(core, trim, miles, mins){
+  if(!trim||!trim.enabled) return core;
+  if(!matches(trim.when,miles,mins)) return core;
+  const rounded = roundTo(core, rangeModel.inc);
+  const dec = Math.max(trim.minAbs, roundTo(rounded*trim.pct, rangeModel.inc));
+  return roundTo(rounded - dec, rangeModel.inc);
+}
+function estimateOriginal(rateKey, mins, miles){
+  const r = cfgOriginal[rateKey];
+  const mPart = minutePart(r.perMinute, mins);
+  const perMile = pickPerMile(r.perMileRules, miles, mins);
+  let core = cfgOriginal.baseFare + mPart + perMile*miles + sumOffsets(r.offsets, miles, mins);
+
+  // R3 extra uplift 3–7mi & >30m
+  if (rateKey==='rate3' && miles>=3 && miles<=7 && mins>30){
+    const k = 0.20 + 0.015*miles;
+    const extra = roundTo(k * (mins - 30), rangeModel.inc);
+    core += extra;
+  }
+  if(r.longTrim) core = longTrim(core, r.longTrim, miles, mins);
+  core = roundTo(core, rangeModel.inc);
+  const rng = buildRange(core, miles, mins);
+  return {core, lower:rng.lower, upper:rng.upper};
+}
+
+/* ===== Test (v5) estimator ===== */
+const cfgTest = {
+  baseFare: 4.20, inc: 0.20,
+  variantMul:{ A:1.00, B:0.97, C:1.03 },
+  minuteTiers:{
+    rate1:[{upTo:12,v:0.30},{upTo:25,v:0.36},{v:0.40}],
+    rate2:[{upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.60}],
+    rate3:[{upTo:12,v:0.58},{upTo:30,v:0.62},{v:0.44}]
+  },
+  perMile:{
+    rate1:[
+      {when:{mMin:4.0,mMax:4.8,tMin:31,tMax:45}, v:4.30},
+      {when:{mMin:4.0,mMax:4.8,tMin:16,tMax:30}, v:3.85},
+      {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:3.65},
+      {when:{mMin:25}, v:3.80},
+      {when:{mMin:15}, v:3.95},
+      {when:{mMin:7},  v:4.05},
+      {when:{mMax:6.0}, v:3.60},
+      {v:4.29}
+    ],
+    rate2:[
+      {when:{mMin:4.1,mMax:4.6,tMin:16,tMax:19}, v:4.75},
+      {when:{mMin:3.9,mMax:4.05,tMin:20,tMax:22}, v:4.55},
+      {when:{mMin:3.8,mMax:4.1,tMin:23,tMax:26}, v:4.70},
+      {when:{mMin:4.2,mMax:4.5,tMin:20,tMax:26}, v:5.35},
+      {when:{mMin:4.2,mMax:4.5,tMin:27,tMax:40}, v:5.15},
+      {when:{mMin:7.5,mMax:10,tMin:40,tMax:55}, v:3.85},
+      {when:{mMin:18,mMax:25,tMin:55,tMax:70},  v:4.08},
+      {when:{mMin:25}, v:4.12},
+      {when:{mMin:7.5}, v:4.15},
+      {when:{mMin:3.5,mMax:4.5,tMin:16,tMax:30}, v:4.00},
+      {when:{mMin:1.8,mMax:2.2,tMin:10,tMax:20}, v:3.65},
+      {v:4.29}
+    ],
+    rate3_head:[
+      {when:{mMin:3.3,mMax:3.6,tMin:14,tMax:22}, v:3.55},
+      {when:{mMin:3.3,mMax:3.6,tMin:23,tMax:28}, v:3.60},
+      {when:{mMin:1.0,mMax:3.2}, v:3.90},
+      {v:4.00}
+    ]
+  }
+};
+function minutePartTest(tiers, mins, mul){
+  let rem=mins, used=0, sum=0;
+  for(const t of tiers){
+    const up = t.upTo==null ? Infinity : t.upTo;
+    const span = Math.max(0, Math.min(rem, up-used));
+    sum += span * (t.v*mul);
+    rem -= span; used += span; if(rem<=0) break;
+  }
+  return sum;
+}
+function pickPerMileTest(rules, mi, mn){
+  const r = rules.find(x=>matches(x.when,mi,mn));
+  return (r||rules[rules.length-1]).v;
+}
+function estimateTest(rateKey, mins, miles, variant){
+  const mul = cfgTest.variantMul[variant||'A']||1;
+  const tiers = cfgTest.minuteTiers[rateKey];
+  const mPart = minutePartTest(tiers, mins, mul);
+
+  // rate3 per-mile: <5 uses head map, 5+ reuse rate2 map
+  let rules;
+  if(rateKey==='rate3'){
+    rules = (miles>=5) ? cfgTest.perMile.rate2 : cfgTest.perMile.rate3_head;
+  } else {
+    rules = cfgTest.perMile[rateKey];
+  }
+  const perMi = pickPerMileTest(rules, miles, mins) * mul;
+
+  // R3 uplift 3–7mi & >30m
+  let extra = 0;
+  if(rateKey==='rate3' && miles>=3 && miles<=7 && mins>30){
+    const k = 0.20 + 0.015*miles; extra = roundTo(k*(mins-30), rangeModel.inc);
+  }
+
+  let core = cfgTest.baseFare + mPart + perMi*miles + extra;
+  core = roundTo(core, rangeModel.inc);
+  const {lower,upper} = buildRange(core, miles, mins);
+  return {core, lower, upper};
+}
+
+/* ===== Table plumbing ===== */
+let rows = []; // {mins, miles, meter}
+
+function parseCSV(text){
+  const out=[];
+  text.split(/\r?\n/).forEach(line=>{
+    const s=line.trim(); if(!s) return;
+    const parts=s.split(',').map(x=>x.trim());
+    if(parts.length<3) return;
+    const [mStr, miStr, meStr] = parts;
+    const mins = Number(mStr), miles = Number(miStr), meter = Number(String(meStr).replace('£',''));
+    if(Number.isFinite(mins)&&Number.isFinite(miles)&&Number.isFinite(meter)) out.push({mins,miles,meter});
+  });
+  return out;
+}
+
+function classify(err, tol){
+  if(Math.abs(err)<=tol) return 'near';
+  return err>0 ? 'over' : 'under'; // over = estimator > meter → blue
+}
+
+function recalcAndRender(){
+  const rate = $('rateSel').value;
+  const variant = $('variantSel').value;
+  const tol = Number($('tol').value)||0.60;
+  const filter = $('filterSel').value;
+  const sort = $('sortSel').value;
+
+  const computed = rows.map((r,i)=>{
+    const o = estimateOriginal(rate, r.mins, r.miles);
+    const t = estimateTest(rate, r.mins, r.miles, variant);
+
+    const errO = r2(o.core - r.meter);
+    const errT = r2(t.core - r.meter);
+    const flagO = classify(errO, tol);
+    const flagT = classify(errT, tol);
+    const coreDelta = r2(t.core - o.core);
+
+    return {idx:i+1, ...r, o, t, errO, errT, flagO, flagT, coreDelta};
+  });
+
+  // filter
+  let view = computed;
+  if(filter==='over_any') view = view.filter(r=>r.flagO==='over' || r.flagT==='over');
+  else if(filter==='under_any') view = view.filter(r=>r.flagO==='under' || r.flagT==='under');
+  else if(filter==='near_both') view = view.filter(r=>r.flagO==='near' && r.flagT==='near');
+
+  // sort
+  if(sort==='orig_asc') view.sort((a,b)=>Math.abs(a.errO)-Math.abs(b.errO));
+  else if(sort==='orig_desc') view.sort((a,b)=>Math.abs(b.errO)-Math.abs(a.errO));
+  else if(sort==='test_asc') view.sort((a,b)=>Math.abs(a.errT)-Math.abs(b.errT));
+  else if(sort==='test_desc') view.sort((a,b)=>Math.abs(b.errT)-Math.abs(a.errT));
+  // none: keep input order
+
+  // render
+  const tb = $('tbody'); tb.innerHTML='';
+  for(const r of view){
+    const clsO = r.flagO; // over/under/near with our colour scheme
+    const clsT = r.flagT;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono">${r.idx}</td>
+      <td>${r.mins}</td>
+      <td>${r.miles.toFixed(1)}</td>
+      <td class="mono">£${r.meter.toFixed(2)}</td>
+
+      <td class="mono">£${r.o.core.toFixed(2)}</td>
+      <td class="mono ${clsO}">${r.errO>0?'+':''}${r.errO.toFixed(2)}</td>
+
+      <td class="mono">£${r.t.core.toFixed(2)}</td>
+      <td class="mono ${clsT}">${r.errT>0?'+':''}${r.errT.toFixed(2)}</td>
+
+      <td class="mono">${r.coreDelta>0?'+':''}${r.coreDelta.toFixed(2)}</td>
+    `;
+    tb.appendChild(tr);
+  }
+}
+
+$('addPasted').addEventListener('click', ()=>{
+  const arr = parseCSV($('pasteBox').value);
+  rows = rows.concat(arr);
+  $('pasteBox').value='';
+  recalcAndRender();
+});
+$('addOne').addEventListener('click', ()=>{
+  const mins = Number($('qMin').value);
+  const miles = Number($('qMi').value);
+  const meter = Number($('qMeter').value);
+  if(Number.isFinite(mins)&&Number.isFinite(miles)&&Number.isFinite(meter)){
+    rows.push({mins,miles,meter});
+    $('qMin').value=$('qMi').value=$('qMeter').value='';
+    recalcAndRender();
+  }
+});
+['rateSel','variantSel','tol','filterSel','sortSel'].forEach(id=>{
+  $(id).addEventListener('input', recalcAndRender);
+});
+$('recalcBtn').addEventListener('click', recalcAndRender);
+$('clearAll').addEventListener('click', ()=>{ rows=[]; recalcAndRender(); });
+
+$('exportBtn').addEventListener('click', ()=>{
+  const tol = Number($('tol').value)||0.60;
+  const rate = $('rateSel').value, variant=$('variantSel').value;
+
+  const th = ["minutes","miles","meter",
+              "core_original","diff_vs_meter_original",
+              "core_test","diff_vs_meter_test",
+              "core_delta_test_minus_original",
+              "flag_original","flag_test",
+              "rate","variant","tolerance"];
+  const out = rows.map(r=>{
+    const o = estimateOriginal(rate, r.mins, r.miles);
+    const t = estimateTest(rate, r.mins, r.miles, variant);
+    const errO = r2(o.core - r.meter), errT = r2(t.core - r.meter);
+    const flagO = classify(errO, tol), flagT = classify(errT, tol);
+    const coreDelta = r2(t.core - o.core);
+    return [r.mins, r.miles, r.meter, o.core, errO, t.core, errT, coreDelta, flagO, flagT, rate, variant, tol];
+  });
+  const csv = [th.join(',')].concat(out.map(a=>a.join(','))).join('\r\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'}); // BOM for Excel
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'cabwizz_dual_tester_results.csv';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+// ready
+recalcAndRender();
+</script>
+</body>
+</html>

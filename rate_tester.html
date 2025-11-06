@@ -1,295 +1,376 @@
-!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CabWizz RateTester — Simple Model (R1/R2/R3)</title>
+<title>CabWizz — Dual Tester v5 (Old vs New Scalable)</title>
 <style>
-  :root{--ok:#0a7;--warn:#f8a100;--danger:#d33;--ink:#111;--muted:#666;--stroke:#e6e6ea}
+  :root{
+    --bg:#f7f7f8; --card:#fff; --bd:#e5e5ea;
+    --over:#1869ff; /* estimator > meter */
+    --under:#d23636; /* estimator < meter */
+    --near:#111;
+  }
   *{box-sizing:border-box}
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#fafafb;color:var(--ink);margin:16px}
-  h1{font-size:20px;margin:0 0 10px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .card{background:#fff;border:1px solid var(--stroke);border-radius:14px;padding:14px;margin:10px 0}
-  label{display:block;font-size:13px;color:#333;margin:6px 0}
-  input,select,textarea,button{font-size:14px;padding:10px;border:1px solid var(--stroke);border-radius:10px;background:#fff}
-  textarea{width:100%;min-height:120px}
-  .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
-  button{font-weight:600}
-  .ok{background:var(--ok);color:#fff;border:none}
-  .warn{background:var(--warn);color:#000;border:none}
-  .muted{color:var(--muted)}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{border-bottom:1px solid #f0f0f3;padding:8px;text-align:left;vertical-align:top}
-  th{background:#f7f7fb;position:sticky;top:0}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);margin:12px;color:#111}
+  h1{font-size:18px;margin:0 0 10px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin:10px 0}
+  .grid{display:grid;gap:10px}
+  .controls{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .inputs{grid-template-columns:1fr 1fr}
+  @media (max-width:980px){.controls{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media (max-width:560px){.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.inputs{grid-template-columns:1fr}}
+  label{font-size:12px;color:#444;display:block;margin-bottom:4px}
+  input,select,button,textarea{width:100%;font-size:14px;border-radius:12px;border:1px solid var(--bd);padding:10px;background:#fff}
+  textarea{min-height:130px}
+  button{font-weight:600;cursor:pointer}
+  .btn{background:#0a7;color:#fff;border:none}
+  .btn.alt{background:#1869ff}
+  .btn.gray{background:#fff;color:#111;border:1px solid var(--bd)}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{border-bottom:1px solid #eee;padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#fafafa;position:sticky;top:0}
   .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-  .over{background:rgba(211,51,51,.08)}
-  .under{background:rgba(24,105,255,.08)}
-  .good{background:rgba(10,167,112,.08)}
-  .badge{background:#eef7f3;color:#045a36;font-size:11px;padding:2px 8px;border-radius:999px}
+  .over{color:var(--over);font-weight:700}
+  .under{color:var(--under);font-weight:700}
+  .near{color:var(--near)}
+  .tiny{color:#666;font-size:12px;margin-top:6px}
 </style>
 </head>
 <body>
+  <h1>CabWizz — Dual Tester v5 (Old vs New Scalable)</h1>
 
-<h1>CabWizz RateTester <span class="badge">Simple Model (R1/R2/R3)</span></h1>
-
-<div class="card">
-  <div class="row">
-    <div>
-      <label>Choose Rate</label>
-      <select id="rateSel">
-        <option value="r1">Rate 1</option>
-        <option value="r2">Rate 2</option>
-        <option value="r3">Rate 3</option>
-      </select>
-    </div>
-    <div>
-      <label>Error threshold to flag (≥)</label>
-      <input id="errThresh" type="number" step="0.1" value="1.50">
-    </div>
-  </div>
-
-  <div class="row">
-    <div>
-      <label>Paste rows (either with header or not):<br><span class="muted">Format: minutes,miles,meter</span></label>
-      <textarea id="pasteBox" placeholder="e.g.
-10,1.4,14.20
-26,4.9,38.80
-..."></textarea>
-      <div class="btns">
-        <button class="ok" id="addPasted">Add pasted rows</button>
-        <button class="warn" id="clearRows">Clear rows</button>
+  <!-- Minimal controls -->
+  <div class="card">
+    <div class="grid controls">
+      <div>
+        <label>Rate</label>
+        <select id="rateSel">
+          <option value="rate1">Rate 1</option>
+          <option value="rate2">Rate 2</option>
+          <option value="rate3">Rate 3</option>
+        </select>
       </div>
-    </div>
-    <div>
-      <label>Quick add single row</label>
-      <div class="row">
-        <input id="qMin" type="number" step="1" placeholder="minutes">
-        <input id="qMi"  type="number" step="0.1" placeholder="miles">
+      <div>
+        <label>Tolerance (±£)</label>
+        <input id="tol" type="number" step="0.1" value="0.60">
       </div>
-      <input id="qMeter" type="number" step="0.01" placeholder="meter fare (optional)" style="margin-top:8px">
-      <div class="btns">
-        <button id="addOne">Add row</button>
-        <button id="runCalc">Calculate</button>
-        <button id="exportCSV">Export CSV</button>
+      <div>
+        <label>Sort by |Δ|</label>
+        <select id="sortSel">
+          <option value="none" selected>None</option>
+          <option value="old_asc">Old least → most</option>
+          <option value="old_desc">Old most → least</option>
+          <option value="new_asc">New least → most</option>
+          <option value="new_desc">New most → least</option>
+        </select>
       </div>
-      <div class="row" style="margin-top:10px">
-        <div>
-          <label>Filter</label>
-          <select id="filterSel">
-            <option value="all">All rows</option>
-            <option value="problems">Problems (≥ threshold)</option>
-            <option value="over">Over only</option>
-            <option value="under">Under only</option>
-            <option value="good">Within range</option>
-          </select>
-        </div>
-        <div>
-          <label>Show mins/mi ≥</label>
-          <input id="mpmFlag" type="number" step="0.1" value="6.5">
-        </div>
+      <div>
+        <label>&nbsp;</label>
+        <button class="btn" id="recalcBtn">Recalculate</button>
       </div>
-      <div class="muted" style="margin-top:6px">
-        Tip: change Rate or threshold and press <b>Calculate</b>.
+      <div>
+        <label>&nbsp;</label>
+        <button class="btn alt" id="exportBtn">Export CSV</button>
       </div>
     </div>
   </div>
-</div>
 
-<div class="card" style="max-height:60vh;overflow:auto">
-  <table id="tbl">
-    <thead>
-      <tr>
-        <th>#</th>
-        <th>Minutes</th>
-        <th>Miles</th>
-        <th>Meter</th>
-        <th>Core</th>
-        <th>Lower</th>
-        <th>Upper</th>
-        <th>Error</th>
-        <th>mins/mi</th>
-        <th>Flag</th>
-      </tr>
-    </thead>
-    <tbody id="tbody"></tbody>
-  </table>
-</div>
+  <!-- Paste data -->
+  <div class="card">
+    <div class="grid inputs">
+      <div>
+        <label>Paste CSV (minutes,miles,meter) — one per line</label>
+        <textarea id="pasteBox" placeholder="e.g. 29,6.3,35.80&#10;43,6.0,44.40&#10;38,6.0,41.20&#10;30,6.0,35.40"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn" id="addPasted">Add pasted rows</button>
+          <button class="btn gray" id="clearAll">Clear table</button>
+        </div>
+        <div class="tiny">Over = blue (estimator &gt; meter). Under = red (estimator &lt; meter). |Δ| ≤ tolerance = black.</div>
+      </div>
+      <div>
+        <label>Quick add (one row)</label>
+        <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:8px">
+          <div><input id="qMin"   type="number" step="1"   placeholder="Minutes"></div>
+          <div><input id="qMi"    type="number" step="0.1" placeholder="Miles"></div>
+          <div><input id="qMeter" type="number" step="0.01" placeholder="Meter £"></div>
+        </div>
+        <button class="btn" id="addOne" style="margin-top:8px">Add row</button>
+        <p class="mono" style="margin-top:10px;color:#555">Paste ONLY: minutes,miles,meter</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="card" style="max-height:65vh;overflow:auto">
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Min</th>
+          <th>Mi</th>
+          <th>Meter</th>
+          <th>Old core</th>
+          <th>Δ Old</th>
+          <th>New core</th>
+          <th>Δ New</th>
+          <th>Δ(New−Old)</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
 
 <script>
-/* ========= Simple unified model ========= */
+/* ========= Helpers ========= */
+const $ = id => document.getElementById(id);
+const r2 = x => Math.round(x*100)/100;
+const roundTo = (x,inc)=>Math.round(x/inc)*inc;
+const floorTo = (x,inc)=>Math.floor(x/inc)*inc;
+const ceilTo  = (x,inc)=>Math.ceil (x/inc)*inc;
 
-const BASE_FARE = 4.20;
+/* ========= Shared pieces ========= */
 const INC = 0.20;
+const BASE_FARE = 4.20;
 
-const RATES = {
-  r1:{t0:0.30,tSlope:0.08,d0:3.40,dSlope:0.60,congK:0.18,congH:6.5,longTaper10:0.85,longTaper15:0.75},
-  r2:{t0:0.33,tSlope:0.12,d0:3.60,dSlope:0.70,congK:0.22,congH:6.2,longTaper10:0.86,longTaper15:0.76},
-  r3:{t0:0.40,tSlope:0.20,d0:3.80,dSlope:0.80,congK:0.26,congH:5.8,longTaper10:0.88,longTaper15:0.78}
+// Per-minute tiers and per-mile rules as used historically (same across models)
+const MODEL = {
+  rate1:{
+    perMinute:[ {upTo:6,v:0.29},{upTo:12,v:0.34},{upTo:25,v:0.38},{v:0.46} ],
+    perMile:[ {when:{mMax:2.0},v:3.60},{when:{mMin:2.0,mMax:3.5},v:3.75},{when:{mMin:3.5,mMax:4.8},v:3.90},{when:{mMin:4.8,mMax:7.0},v:4.00},{when:{mMin:7.0,mMax:15},v:4.08},{when:{mMin:15,mMax:25},v:3.95},{v:3.80} ]
+  },
+  rate2:{
+    perMinute:[ {upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.60} ],
+    perMile:[ {when:{mMax:1.0},v:3.60},{when:{mMin:1.0,mMax:2.2},v:3.75},{when:{mMin:2.2,mMax:3.5},v:3.95},{when:{mMin:3.5,mMax:4.6},v:4.15},{when:{mMin:4.6,mMax:7.5},v:4.35},{when:{mMin:7.5,mMax:10},v:4.05},{when:{mMin:10},v:4.10} ]
+  },
+  rate3:{
+    perMinute:[ {upTo:10,v:0.60},{upTo:20,v:0.64},{upTo:35,v:0.55},{v:0.45} ],
+    perMile:[ {when:{mMax:3.0},v:3.95},{when:{mMin:3.0,mMax:5.0},v:3.65},{when:{mMin:5.0,mMax:6.5},v:3.40},{when:{mMin:6.6,mMax:9.0},v:3.20},{v:3.10} ]
+  }
 };
 
-const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-const roundTo=(x,inc)=>Math.round(x/inc)*inc;
+// Range rules (visual tolerance bands)
+const RANGE = {
+  inc: INC,
+  bands: [
+    { max: 1.5, lower:{fixed:0.30,pct:0.02}, upper:{fixed:0.60,pct:0.05} },
+    { max: 2.5, lower:{fixed:0.60,pct:0.04}, upper:{fixed:1.00,pct:0.06} },
+    { max: 4.5, lower:{fixed:1.00,pct:0.04}, upper:{fixed:1.60,pct:0.06} },
+    { max: 6.5, lower:{fixed:1.60,pct:0.04}, upper:{fixed:2.00,pct:0.05} },
+    { max: 1e9, lower:{fixed:2.00,pct:0.02}, upper:{fixed:2.50,pct:0.04} },
+  ]
+};
+function baseBand(mi){ return RANGE.bands.find(x=>mi<=x.max) || RANGE.bands[RANGE.bands.length-1]; }
+function clampByFareSize(core, lower, upper){
+  if(core<=20){ lower=Math.min(lower, core-1.00); upper=Math.max(upper, core+1.00); }
+  else if(core<=40){ lower=Math.min(lower, core-1.20); upper=Math.max(upper, core+1.20); }
+  else if(core<=60){ lower=Math.min(lower, core-1.40); upper=Math.max(upper, core+1.40); }
+  else { lower=Math.min(lower, core-1.60); upper=Math.max(upper, core+1.60); }
+  return {lower,upper};
+}
+function buildRange(core, mi, mn){
+  const inc = RANGE.inc;
+  const b = baseBand(mi);
+  let lowerAdj = Math.max(b.lower.fixed, core*b.lower.pct);
+  let upperAdj = Math.max(b.upper.fixed, core*b.upper.pct);
 
-function timeRate(P, miles){
-  const grow = clamp(miles/7,0,1);
-  let r = P.t0 + P.tSlope*grow;
-  if(miles>15) r*=P.longTaper15;
-  else if(miles>10) r*=P.longTaper10;
-  return r;
+  if(mi<=1.0){ lowerAdj = Math.min(lowerAdj,1.00); upperAdj = Math.min(Math.max(upperAdj,1.20),1.80); }
+  if(mi<=2.5 && mn>=15){ lowerAdj = Math.max(lowerAdj*1.05, lowerAdj+0.30); upperAdj = Math.max(upperAdj*1.20, upperAdj+0.80); }
+  if(mi>=6 && mn>=35){ upperAdj = Math.max(upperAdj*1.12, upperAdj+0.80); }
+
+  let lower = floorTo(roundTo(core - lowerAdj, inc), inc);
+  let upper = ceilTo (roundTo(core + upperAdj, inc), inc);
+  const cl = clampByFareSize(core, lower, upper);
+  lower = cl.lower; upper = cl.upper;
+
+  if(mi<=0.8 && lower<6.20) lower = roundTo(6.20, inc);
+  return {lower, upper};
 }
-function distRate(P, mins){
-  const grow = clamp(mins/30,0,1);
-  return P.d0 + P.dSlope*grow;
+
+/* ========= Core calculators ========= */
+function matchesWhen(w, miles){
+  if(!w) return true;
+  if(w.mMin!==undefined && miles < w.mMin) return false;
+  if(w.mMax!==undefined && miles > w.mMax) return false;
+  return true;
 }
-function congestionUplift(P, mins, miles){
-  const mpm = mins/Math.max(miles,0.3);
-  const over = Math.max(0, mpm - P.congH);
-  return P.congK * over * miles;
+function pickPerMile(rules, miles){
+  const r = rules.find(x=>matchesWhen(x.when, miles));
+  return (r||rules[rules.length-1]).v;
 }
-function tolerance(core){
-  if(core<=20) return 1.00;
-  if(core<=40) return 1.20;
-  if(core<=60) return 1.40;
-  return 1.60;
+function minutePart(tiers, mins){
+  let rem=mins, used=0, sum=0;
+  for(const t of tiers){
+    const up = t.upTo==null ? Infinity : t.upTo;
+    const span = Math.max(0, Math.min(rem, up-used));
+    sum += span * t.v;
+    rem -= span; used += span; if(rem<=0) break;
+  }
+  return sum;
 }
-function estimateSimple(rateKey, mins, miles){
-  const P = RATES[rateKey];
-  const tPart = timeRate(P,miles)*mins;
-  const dPart = distRate(P,mins)*miles;
-  const cPart = congestionUplift(P,mins,miles);
-  let core = BASE_FARE + tPart + dPart + cPart;
+
+/* ========= Scalable models =========
+   OLD:  base + minute + per-mile (+ R3 extra uplift); T4 align at ≥6.0mi
+   NEW:  same as OLD, plus:
+         • R1 +£1.20 for 1.5–2.2 mi & ≥13 min
+         • R1 −5% softening for 6–7 mi (applied to total core before rounding)
+*/
+const T4_THRESHOLD = 6.0; // Tariff-4 alignment ON
+function r3Extra(mins, miles){
+  if(miles>=3 && miles<=7 && mins>30){
+    const k = 0.20 + 0.015*miles;
+    return roundTo(k*(mins-30), INC);
+  }
+  return 0;
+}
+
+function estimateScalableOLD(rateKey, mins, miles){
+  const rate = MODEL[rateKey];
+  // minute
+  const mPart = minutePart(rate.perMinute, mins);
+
+  // per-mile with T4 alignment (use Rate 2 per-mile at ≥ threshold)
+  const perMileRules = (miles >= T4_THRESHOLD) ? MODEL.rate2.perMile : rate.perMile;
+  const perMi = pickPerMile(perMileRules, miles);
+  const milePart = perMi * miles;
+
+  // R3 extra uplift kept
+  const extra = (rateKey==='rate3') ? r3Extra(mins, miles) : 0;
+
+  let core = BASE_FARE + mPart + milePart + extra;
   core = roundTo(core, INC);
-  const tol = tolerance(core);
-  const lower = roundTo(core - tol, INC);
-  const upper = roundTo(core + tol, INC);
-  return {core,lower,upper};
+
+  const rng = buildRange(core, miles, mins);
+  return {core, lower:rng.lower, upper:rng.upper};
 }
 
-/* ========= Tester logic ========= */
+function estimateScalableNEW(rateKey, mins, miles){
+  // Start from OLD behaviour
+  let {core} = estimateScalableOLD(rateKey, mins, miles);
 
-const rows=[]; // {mins,miles,meter,core,lower,upper,error,mpm,flag}
+  // v5 tweaks (Rate 1 only)
+  if(rateKey==='rate1'){
+    // +£1.20 correction for 1.5–2.2 mi & ≥13 min
+    if(miles>=1.5 && miles<=2.2 && mins>=13){
+      core += 1.20;
+    }
+    // −5% softening for 6–7 miles (apply before rounding to band)
+    if(miles>=6.0 && miles<=7.0){
+      core = core * 0.95;
+    }
+  }
 
-const $=id=>document.getElementById(id);
-function fmt(x){return x===''||x==null?'':Number(x).toFixed(2);}
+  core = roundTo(core, INC);
+  const rng = buildRange(core, miles, mins);
+  return {core, lower:rng.lower, upper:rng.upper};
+}
 
-function parsePasted(txt){
+/* ========= UI logic ========= */
+let rows = []; // {mins, miles, meter}
+
+function parseCSV(text){
   const out=[];
-  txt.split(/\r?\n/).forEach(line=>{
-    const s=line.trim();
-    if(!s) return;
-    const parts=s.split(',').map(v=>v.trim());
-    if(parts.length<2) return;
-    // header guard
-    if(/minute/i.test(parts[0]) || /mins?/i.test(parts[0])) return;
-    const m = Number(parts[0]), mi = Number(parts[1]), meter = parts[2]!==undefined && parts[2]!=='' ? Number(parts[2]) : '';
-    if(Number.isFinite(m) && Number.isFinite(mi)) out.push({mins:m, miles:mi, meter});
+  text.split(/\r?\n/).forEach(line=>{
+    const s=line.trim(); if(!s) return;
+    const parts=s.split(',').map(x=>x.trim());
+    if(parts.length<3) return;
+    const mins  = Number(parts[0]);
+    const miles = Number(parts[1]);
+    const meter = Number(String(parts[2]).replace('£',''));
+    if(Number.isFinite(mins)&&Number.isFinite(miles)&&Number.isFinite(meter)){
+      out.push({mins,miles,meter});
+    }
   });
   return out;
 }
 
-function calcAll(){
-  const rateKey = $('rateSel').value;
-  const thresh = Number($('errThresh').value)||1.5;
-  const mpmCut = Number($('mpmFlag').value)||6.5;
+function cls(err, tol){ return Math.abs(err)<=tol ? 'near' : (err>0 ? 'over' : 'under'); }
 
-  rows.forEach(r=>{
-    const est = estimateSimple(rateKey, r.mins, r.miles);
-    r.core = est.core; r.lower = est.lower; r.upper = est.upper;
-    r.error = (r.meter===''? '' : Number((r.meter - r.core).toFixed(2)));
-    r.mpm = Number((r.mins/Math.max(r.miles,0.3)).toFixed(2));
+function recalcAndRender(){
+  const rate = $('rateSel').value;
+  const tol  = Number($('tol').value)||0.60;
+  const sort = $('sortSel').value;
 
-    // flagging
-    let f='';
-    if(r.meter!==''){
-      if (Math.abs(r.error) >= thresh){
-        f = r.error>0 ? 'over' : 'under';
-      } else {
-        f = 'good';
-      }
-    }
-    if(r.mpm >= mpmCut){
-      f = (f? f+',' : '') + 'slow';
-    }
-    r.flag = f;
+  const computed = rows.map((r,i)=>{
+    const o = estimateScalableOLD(rate, r.mins, r.miles);
+    const n = estimateScalableNEW(rate, r.mins, r.miles);
+    const errO = r2(o.core - r.meter);
+    const errN = r2(n.core - r.meter);
+    const dNewOld = r2(n.core - o.core);
+    return {idx:i+1, ...r, o, n, errO, errN, dNewOld};
   });
 
-  render();
-}
+  let view = computed;
+  if(sort==='old_asc')  view = [...view].sort((a,b)=>Math.abs(a.errO)-Math.abs(b.errO));
+  if(sort==='old_desc') view = [...view].sort((a,b)=>Math.abs(b.errO)-Math.abs(a.errO));
+  if(sort==='new_asc')  view = [...view].sort((a,b)=>Math.abs(a.errN)-Math.abs(b.errN));
+  if(sort==='new_desc') view = [...view].sort((a,b)=>Math.abs(b.errN)-Math.abs(a.errN));
 
-function render(){
-  const tbody=$('tbody'); tbody.innerHTML='';
-  const filter=$('filterSel').value;
-  const rateKey=$('rateSel').value;
-
-  rows.forEach((r,i)=>{
-    // filter
-    const isProb = (r.flag||'').includes('over') || (r.flag||'').includes('under');
-    if(filter==='problems' && !isProb) return;
-    if(filter==='over' && !(r.flag||'').includes('over')) return;
-    if(filter==='under' && !(r.flag||'').includes('under')) return;
-    if(filter==='good' && (r.flag||'').includes('over') || (r.flag||'').includes('under')) return;
-
-    const tr=document.createElement('tr');
-    let cls='';
-    if((r.flag||'').includes('over')) cls='over';
-    else if((r.flag||'').includes('under')) cls='under';
-    else if((r.flag||'').includes('good')) cls='good';
-    tr.className=cls;
-
-    tr.innerHTML=`
-      <td class="mono">${i+1}</td>
+  const tb = $('tbody'); tb.innerHTML='';
+  for(const r of view){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono">${r.idx}</td>
       <td>${r.mins}</td>
-      <td>${r.miles}</td>
-      <td class="mono">${r.meter===''?'':('£'+fmt(r.meter))}</td>
-      <td class="mono">£${fmt(r.core)}</td>
-      <td class="mono">£${fmt(r.lower)}</td>
-      <td class="mono">£${fmt(r.upper)}</td>
-      <td class="mono">${r.meter===''?'':(r.error>0?'+':'')}${r.meter===''?'':fmt(r.error)}</td>
-      <td class="mono">${fmt(r.mpm)}</td>
-      <td>${r.flag||''}</td>
+      <td>${r.miles.toFixed(1)}</td>
+      <td class="mono">£${r.meter.toFixed(2)}</td>
+
+      <td class="mono">£${r.o.core.toFixed(2)}</td>
+      <td class="mono ${cls(r.errO,tol)}">${r.errO>0?'+':''}${r.errO.toFixed(2)}</td>
+
+      <td class="mono">£${r.n.core.toFixed(2)}</td>
+      <td class="mono ${cls(r.errN,tol)}">${r.errN>0?'+':''}${r.errN.toFixed(2)}</td>
+
+      <td class="mono">${r.dNewOld>0?'+':''}${r.dNewOld.toFixed(2)}</td>
     `;
-    tbody.appendChild(tr);
-  });
+    tb.appendChild(tr);
+  }
 }
 
 $('addPasted').addEventListener('click', ()=>{
-  const arr = parsePasted($('pasteBox').value);
-  arr.forEach(x=>rows.push(x));
-  $('pasteBox').value='';
-  calcAll();
-});
-$('clearRows').addEventListener('click', ()=>{
-  if(confirm('Clear all rows?')){ rows.length=0; render(); }
+  const arr = parseCSV($('pasteBox').value);
+  if(arr.length){ rows = rows.concat(arr); $('pasteBox').value=''; recalcAndRender(); }
 });
 $('addOne').addEventListener('click', ()=>{
-  const m=Number($('qMin').value), mi=Number($('qMi').value);
-  if(!Number.isFinite(m)||!Number.isFinite(mi)) return alert('Enter minutes and miles.');
-  const meter=$('qMeter').value===''?'':Number($('qMeter').value);
-  rows.push({mins:m,miles:mi,meter});
-  $('qMin').value=''; $('qMi').value=''; $('qMeter').value='';
-  calcAll();
+  const mins  = Number($('qMin').value);
+  const miles = Number($('qMi').value);
+  const meter = Number($('qMeter').value);
+  if(Number.isFinite(mins)&&Number.isFinite(miles)&&Number.isFinite(meter)){
+    rows.push({mins,miles,meter});
+    $('qMin').value=$('qMi').value=$('qMeter').value='';
+    recalcAndRender();
+  }
 });
-$('runCalc').addEventListener('click', calcAll);
-$('filterSel').addEventListener('change', render);
-$('rateSel').addEventListener('change', calcAll);
-$('errThresh').addEventListener('input', calcAll);
-$('mpmFlag').addEventListener('input', calcAll);
+['rateSel','tol','sortSel'].forEach(id=>$(id).addEventListener('input', recalcAndRender));
+$('recalcBtn').addEventListener('click', recalcAndRender);
+$('clearAll').addEventListener('click', ()=>{ rows=[]; recalcAndRender(); });
 
-$('exportCSV').addEventListener('click', ()=>{
-  const head=['minutes','miles','meter','core','lower','upper','error','mins_per_mile','flags'];
-  const lines=[head.join(',')];
-  rows.forEach(r=>{
-    lines.push([r.mins,r.miles,(r.meter===''?'':r.meter),r.core,r.lower,r.upper,(r.meter===''?'':r.error),r.mpm,(r.flag||'')].join(','));
+$('exportBtn').addEventListener('click', ()=>{
+  const tol = Number($('tol').value)||0.60;
+  const rate = $('rateSel').value;
+  const th = ["minutes","miles","meter",
+              "core_old","diff_old",
+              "core_new","diff_new",
+              "delta_new_minus_old",
+              "rate","t4_align_miles","tolerance"];
+  const out = rows.map(r=>{
+    const o = estimateScalableOLD(rate, r.mins, r.miles);
+    const n = estimateScalableNEW(rate, r.mins, r.miles);
+    const errO = r2(o.core - r.meter), errN = r2(n.core - r.meter);
+    return [r.mins,r.miles,r.meter,
+            o.core,errO,
+            n.core,errN,
+            r2(n.core - o.core),
+            rate,T4_THRESHOLD,tol];
   });
-  const blob=new Blob([lines.join('\r\n')],{type:'text/csv'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='cabwizz_ratetest_results.csv'; a.click(); URL.revokeObjectURL(a.href);
+  const csv = [th.join(',')].concat(out.map(a=>a.join(','))).join('\r\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='cabwizz_dual_tester_v5.csv'; a.click(); URL.revokeObjectURL(a.href);
 });
 
-// seed example
-rows.push({mins:20,miles:4.9,meter:35.40},{mins:26,miles:4.9,meter:38.80});
-calcAll();
+// init
+recalcAndRender();
 </script>
 </body>
 </html>

@@ -3,11 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CabWizz — Dual Tester v5.1 (Original vs Scalable)</title>
+<title>CabWizz — Dual Tester v5 (Old Scalable vs New Tweaked)</title>
 <style>
   :root{
     --bg:#f7f7f8; --card:#fff; --bd:#e5e5ea;
-    --blue:#1869ff; --red:#d23636; --near:#111;
+    --blue:#1869ff; /* OVER */
+    --red:#d23636;  /* UNDER */
+    --near:#111;    /* within tolerance */
   }
   *{box-sizing:border-box}
   body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);margin:12px;color:#111}
@@ -20,7 +22,7 @@
   @media (max-width:560px){.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.inputs{grid-template-columns:1fr}}
   label{font-size:12px;color:#444;display:block;margin-bottom:4px}
   input,select,button,textarea{width:100%;font-size:14px;border-radius:12px;border:1px solid var(--bd);padding:10px;background:#fff}
-  textarea{min-height:110px}
+  textarea{min-height:120px}
   button{font-weight:600;cursor:pointer}
   .btn{background:#0a7;color:#fff;border:none}
   .btn.alt{background:#1869ff}
@@ -32,17 +34,18 @@
   .over{color:var(--blue);font-weight:700}
   .under{color:var(--red);font-weight:700}
   .near{color:var(--near)}
+  details summary{cursor:pointer;font-weight:600}
   .tiny{color:#666;font-size:12px;margin-top:6px}
 </style>
 </head>
 <body>
-  <h1>CabWizz — Dual Tester v5.1 (Original vs Scalable)</h1>
+  <h1>CabWizz — Dual Tester v5 (Old Scalable vs New Tweaked)</h1>
 
-  <!-- Minimal admin knobs kept; paste remains minutes,miles,meter only -->
+  <!-- Top controls -->
   <div class="card">
     <div class="grid controls">
       <div>
-        <label>Rate (for calculations below)</label>
+        <label>Rate (calculate rows as)</label>
         <select id="rateSel">
           <option value="rate1">Rate 1</option>
           <option value="rate2">Rate 2</option>
@@ -51,7 +54,7 @@
       </div>
 
       <div>
-        <label>Base Fare (£) — scalable</label>
+        <label>Base Fare (£)</label>
         <input id="baseFare" type="number" step="0.01" value="4.20">
       </div>
 
@@ -59,28 +62,27 @@
         <label>Global uplift (%)</label>
         <input id="upliftGlobal" type="number" step="0.01" value="0">
       </div>
-
       <div>
-        <label>R1 uplift (%)</label>
+        <label>Rate-1 uplift (%)</label>
         <input id="upliftR1" type="number" step="0.01" value="0">
       </div>
       <div>
-        <label>R2 uplift (%)</label>
+        <label>Rate-2 uplift (%)</label>
         <input id="upliftR2" type="number" step="0.01" value="0">
       </div>
       <div>
-        <label>R3 uplift (%)</label>
+        <label>Rate-3 uplift (%)</label>
         <input id="upliftR3" type="number" step="0.01" value="0">
       </div>
 
       <div>
-        <label>Tariff-4 align (≥ miles)</label>
+        <label>Rate-4 align (≥ miles)</label>
         <input id="t4Miles" type="number" step="0.1" value="6.0">
       </div>
       <div>
-        <label>Tariff-4 alignment</label>
+        <label>Rate-4 alignment</label>
         <select id="t4Align">
-          <option value="on" selected>On (≥ threshold → use Rate-2 per-mile)</option>
+          <option value="on" selected>On (use Rate-2 per-mile ≥ threshold)</option>
           <option value="off">Off</option>
         </select>
       </div>
@@ -97,10 +99,10 @@
         <label>Sort by |Δ|</label>
         <select id="sortSel">
           <option value="none" selected>None</option>
-          <option value="orig_asc">Orig least → most</option>
-          <option value="orig_desc">Orig most → least</option>
-          <option value="scal_asc">Scalable least → most</option>
-          <option value="scal_desc">Scalable most → least</option>
+          <option value="old_asc">Old least → most</option>
+          <option value="old_desc">Old most → least</option>
+          <option value="new_asc">New least → most</option>
+          <option value="new_desc">New most → least</option>
         </select>
       </div>
       <div>
@@ -108,6 +110,33 @@
         <button class="btn" id="recalcBtn">Recalculate</button>
       </div>
     </div>
+  </div>
+
+  <!-- Band Tweaks (simple £ adds per 1-mile band, up to 10mi) -->
+  <div class="card">
+    <details>
+      <summary>Band Tweaks (NEW model) — £ add by miles band (applied ≤ 10 miles)</summary>
+      <div class="grid" style="grid-template-columns:repeat(5,1fr);margin-top:8px">
+        <div><label>Rate</label>
+          <select id="bandRateSel">
+            <option value="rate1" selected>Rate 1</option>
+            <option value="rate2">Rate 2</option>
+            <option value="rate3">Rate 3</option>
+          </select>
+        </div>
+        <div><label>0–1 (£)</label>   <input class="band rate1" data-band="0" type="number" step="0.20" value="0"></div>
+        <div><label>1–2 (£)</label>   <input class="band rate1" data-band="1" type="number" step="0.20" value="0"></div>
+        <div><label>2–3 (£)</label>   <input class="band rate1" data-band="2" type="number" step="0.20" value="0"></div>
+        <div><label>3–4 (£)</label>   <input class="band rate1" data-band="3" type="number" step="0.20" value="0"></div>
+        <div><label>4–5 (£)</label>   <input class="band rate1" data-band="4" type="number" step="0.20" value="0"></div>
+        <div><label>5–6 (£)</label>   <input class="band rate1" data-band="5" type="number" step="0.20" value="0"></div>
+        <div><label>6–7 (£)</label>   <input class="band rate1" data-band="6" type="number" step="0.20" value="0"></div>
+        <div><label>7–8 (£)</label>   <input class="band rate1" data-band="7" type="number" step="0.20" value="0"></div>
+        <div><label>8–9 (£)</label>   <input class="band rate1" data-band="8" type="number" step="0.20" value="0"></div>
+        <div><label>9–10 (£)</label>  <input class="band rate1" data-band="9" type="number" step="0.20" value="0"></div>
+      </div>
+      <div class="tiny">Tip: switch the “Rate” dropdown to R2/R3 to edit those bands. Values are saved per rate during the session.</div>
+    </details>
   </div>
 
   <!-- Data entry -->
@@ -131,7 +160,7 @@
           <div><input id="qMeter" type="number" step="0.01" placeholder="Meter £"></div>
         </div>
         <button class="btn" id="addOne" style="margin-top:8px">Add row</button>
-        <p class="mono" style="margin-top:10px;color:#555">Paste only minutes,miles,meter — nothing else required.</p>
+        <p class="mono" style="margin-top:10px;color:#555">Paste only minutes,miles,meter — everything else is auto.</p>
       </div>
     </div>
   </div>
@@ -145,11 +174,11 @@
           <th>Minutes</th>
           <th>Miles</th>
           <th>Meter</th>
-          <th>Core (Original)</th>
-          <th>Δ vs Meter (Orig)</th>
-          <th>Core (Scalable)</th>
-          <th>Δ vs Meter (Scalable)</th>
-          <th>Core Δ (Scal−Orig)</th>
+          <th>OLD: Scalable core</th>
+          <th>Δ vs Meter (OLD)</th>
+          <th>NEW: Scalable + BandTweaks</th>
+          <th>Δ vs Meter (NEW)</th>
+          <th>Δ (NEW−OLD)</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
@@ -157,145 +186,49 @@
   </div>
 
 <script>
-/* ========== Utilities ========== */
+/* ===== Helpers ===== */
 const $ = id => document.getElementById(id);
 const r2 = x => Math.round(x*100)/100;
 const roundTo = (x,inc)=>Math.round(x/inc)*inc;
 const floorTo = (x,inc)=>Math.floor(x/inc)*inc;
 const ceilTo  = (x,inc)=>Math.ceil (x/inc)*inc;
 
-/* ========== Range model ========== */
-const RANGE = {
-  inc: 0.20,
-  bands: [
-    { max: 1.5, lower:{fixed:0.30,pct:0.02}, upper:{fixed:0.60,pct:0.05} },
-    { max: 2.5, lower:{fixed:0.60,pct:0.04}, upper:{fixed:1.00,pct:0.06} },
-    { max: 4.5, lower:{fixed:1.00,pct:0.04}, upper:{fixed:1.60,pct:0.06} },
-    { max: 6.5, lower:{fixed:1.60,pct:0.04}, upper:{fixed:2.00,pct:0.05} },
-    { max: 1e9, lower:{fixed:2.00,pct:0.02}, upper:{fixed:2.50,pct:0.04} },
-  ]
-};
-function baseBand(mi){ return RANGE.bands.find(x=>mi<=x.max) || RANGE.bands[RANGE.bands.length-1]; }
-function clampByFareSize(core, lower, upper){
-  if(core<=20){ lower=Math.min(lower, core-1.00); upper=Math.max(upper, core+1.00); }
-  else if(core<=40){ lower=Math.min(lower, core-1.20); upper=Math.max(upper, core+1.20); }
-  else if(core<=60){ lower=Math.min(lower, core-1.40); upper=Math.max(upper, core+1.40); }
-  else { lower=Math.min(lower, core-1.60); upper=Math.max(upper, core+1.60); }
-  return {lower,upper};
-}
-function buildRange(core, mi, mn){
-  const inc = RANGE.inc;
-  const b = baseBand(mi);
-  let lowerAdj = Math.max(b.lower.fixed, core*b.lower.pct);
-  let upperAdj = Math.max(b.upper.fixed, core*b.upper.pct);
+/* ===== Fare increment & range (for display bounds if you need later) ===== */
+const INC = 0.20;
 
-  if(mi<=1.0){ lowerAdj = Math.min(lowerAdj,1.00); upperAdj = Math.min(Math.max(upperAdj,1.20),1.80); }
-  if(mi<=2.5 && mn>=15){ lowerAdj = Math.max(lowerAdj*1.05, lowerAdj+0.30); upperAdj = Math.max(upperAdj*1.20, upperAdj+0.80); }
-  if(mi>=6 && mn>=35){ upperAdj = Math.max(upperAdj*1.12, upperAdj+0.80); }
-
-  let lower = floorTo(roundTo(core - lowerAdj, inc), inc);
-  let upper = ceilTo (roundTo(core + upperAdj, inc), inc);
-  const cl = clampByFareSize(core, lower, upper);
-  lower = cl.lower; upper = cl.upper;
-
-  if(mi<=0.8 && lower<6.20) lower = roundTo(6.20, inc);
-  return {lower, upper};
-}
-
-/* ========== ORIGINAL model (as before) ========== */
-const ORIG = {
-  baseFare: 4.20, inc: 0.20,
+/* ===== Minute tiers & per-mile bands (as before) ===== */
+const MODEL = {
+  baseFare: 4.20,
   rate1:{
     perMinute:[ {upTo:6,v:0.29},{upTo:12,v:0.34},{upTo:25,v:0.38},{v:0.46} ],
-    perMileRules:[ {when:{mMax:2.0},v:3.60},{when:{mMin:2.0,mMax:3.5},v:3.75},{when:{mMin:3.5,mMax:4.8},v:3.90},{when:{mMin:4.8,mMax:7.0},v:4.00},{when:{mMin:7.0,mMax:15},v:4.08},{when:{mMin:15,mMax:25},v:3.95},{v:3.80} ],
-    offsets:[ {when:{mMax:2.2,tMin:12,tMax:20}, d: 1.20},{when:{mMin:1.6,mMax:2.0,tMin:18,tMax:22}, d: 2.00},{when:{mMin:3.8,mMax:4.2,tMin:20,tMax:24}, d:-1.00} ],
-    longTrim:{ enabled:true, when:{ mMin:35, tMin:90 }, pct:0.03, minAbs:2.00 }
+    perMile:[ {mMax:2.0, v:3.60},{mMin:2.0,mMax:3.5, v:3.75},{mMin:3.5,mMax:4.8, v:3.90},{mMin:4.8,mMax:7.0, v:4.00},{mMin:7.0,mMax:15, v:4.08},{mMin:15,mMax:25, v:3.95},{v:3.80} ]
   },
   rate2:{
     perMinute:[ {upTo:6,v:0.31},{upTo:12,v:0.33},{upTo:25,v:0.40},{v:0.60} ],
-    perMileRules:[ {when:{mMax:1.0},v:3.60},{when:{mMin:1.0,mMax:2.2},v:3.75},{when:{mMin:2.2,mMax:3.5},v:3.95},{when:{mMin:3.5,mMax:4.6},v:4.15},{when:{mMin:4.6,mMax:7.5},v:4.35},{when:{mMin:7.5,mMax:10},v:4.05},{when:{mMin:10},v:4.10} ],
-    offsets:[ {when:{mMin:1.7,mMax:1.9,tMin:20,tMax:22}, d: 5.00},{when:{mMin:1.5,mMax:2.0,tMin:12,tMax:18}, d: 1.20},{when:{mMin:6.0,mMax:7.0,tMin:26,tMax:35}, d:-1.40},{when:{mMin:7.5,mMax:10.0,tMin:40,tMax:55}, d:-1.20},{when:{mMax:0.8,tMax:5}, d:-0.40} ],
-    longTrim:{ enabled:true, when:{ mMin:25, tMin:65 }, pct:0.05, minAbs:3.50 }
+    perMile:[ {mMax:1.0, v:3.60},{mMin:1.0,mMax:2.2, v:3.75},{mMin:2.2,mMax:3.5, v:3.95},{mMin:3.5,mMax:4.6, v:4.15},{mMin:4.6,mMax:7.5, v:4.35},{mMin:7.5,mMax:10, v:4.05},{mMin:10, v:4.10} ]
   },
   rate3:{
     perMinute:[ {upTo:10,v:0.60},{upTo:20,v:0.64},{upTo:35,v:0.55},{v:0.45} ],
-    perMileRules:[ {when:{mMax:3.0},v:3.95},{when:{mMin:3.0,mMax:5.0},v:3.65},{when:{mMin:5.0,mMax:6.5},v:3.40},{when:{mMin:6.6,mMax:9.0},v:3.20},{v:3.10} ],
-    offsets:[ {when:{mMin:1.5,mMax:1.9,tMin:18,tMax:25}, d: 6.00},{when:{mMin:2.0,mMax:2.3,tMin:12,tMax:18}, d: 5.00},{when:{mMin:6.0,mMax:7.0,tMin:25,tMax:35}, d:-3.00},{when:{mMin:7.5,mMax:9.2,tMin:26,tMax:38}, d:-5.00},{when:{mMax:0.8,tMax:5}, d:-0.40},{when:{mMin:9.5,mMax:10.5,tMin:40,tMax:50}, d:1.20} ],
-    longTrim:{ enabled:true, when:{ mMin:25, tMin:65 }, pct:0.05, minAbs:3.50 }
+    perMile:[ {mMax:3.0, v:3.95},{mMin:3.0,mMax:5.0, v:3.65},{mMin:5.0,mMax:6.5, v:3.40},{mMin:6.6,mMax:9.0, v:3.20},{v:3.10} ],
+    r3Extra:true // keep the 3–7 mi, >30 min uplift behaviour you validated before
   }
 };
-function matchesFull(w, miles, mins){
-  if(!w) return true;
-  if(w.mMin!==undefined && miles < w.mMin) return false;
-  if(w.mMax!==undefined && miles > w.mMax) return false;
-  if(w.tMin!==undefined && mins  < w.tMin) return false;
-  if(w.tMax!==undefined && mins  > w.tMax) return false;
-  return true;
-}
-function pickPerMileFull(rules, miles, mins){
-  const r = rules.find(x=>matchesFull(x.when,miles,mins));
-  return (r||rules[rules.length-1]).v;
-}
-function minutePartFull(tiers, mins){
-  let rem=mins, used=0, sum=0;
-  for(const t of tiers){
-    if(t.upTo==null){ sum+=rem*t.v; break; }
-    const span=Math.max(0, Math.min(rem, t.upTo-used));
-    sum += span*t.v; rem-=span; used+=span;
-    if(rem<=0) break;
-  }
-  return sum;
-}
-function sumOffsets(arr, miles, mins){
-  return (arr||[]).reduce((s,o)=>s+(matchesFull(o.when,miles,mins)?o.d:0),0);
-}
-function longTrim(core, trim, miles, mins){
-  if(!trim||!trim.enabled) return core;
-  if(!matchesFull(trim.when,miles,mins)) return core;
-  const dec = Math.max(trim.minAbs, roundTo(core*trim.pct, RANGE.inc));
-  return roundTo(core - dec, RANGE.inc);
-}
-function estimateOriginal(rateKey, mins, miles){
-  const r = ORIG[rateKey];
-  const mPart = minutePartFull(r.perMinute, mins);
-  const perMile = pickPerMileFull(r.perMileRules, miles, mins);
-  let core = ORIG.baseFare + mPart + perMile*miles + sumOffsets(r.offsets, miles, mins);
-  // R3 extra uplift 3–7mi & >30m (keep)
-  if (rateKey==='rate3' && miles>=3 && miles<=7 && mins>30){
-    const k = 0.20 + 0.015*miles;
-    const extra = roundTo(k * (mins - 30), RANGE.inc);
-    core += extra;
-  }
-  if(r.longTrim) core = longTrim(core, r.longTrim, miles, mins);
-  core = roundTo(core, RANGE.inc);
-  const rng = buildRange(core, miles, mins);
-  return {core, lower:rng.lower, upper:rng.upper};
-}
 
-/* ========== SCALABLE model with NEW corrections on R1, R2, R3 ========== */
-function getAdmin(){
-  const baseFare = Number($('baseFare').value)||4.20;
-  const g = (Number($('upliftGlobal').value)||0)/100 + 1;
-  const rateMul = {
-    rate1: (Number($('upliftR1').value)||0)/100 + 1,
-    rate2: (Number($('upliftR2').value)||0)/100 + 1,
-    rate3: (Number($('upliftR3').value)||0)/100 + 1
-  };
-  const r4Mul = (Number($('upliftR4').value)||0)/100 + 1;
+/* ===== Uplifts (your switches) ===== */
+function getUplifts(){
+  const baseFare = Number($('baseFare').value)||MODEL.baseFare;
+  const g  = (Number($('upliftGlobal').value)||0)/100 + 1;
+  const r1 = (Number($('upliftR1').value)||0)/100 + 1;
+  const r2 = (Number($('upliftR2').value)||0)/100 + 1;
+  const r3 = (Number($('upliftR3').value)||0)/100 + 1;
+  const r4 = (Number($('upliftR4').value)||0)/100 + 1;
   const t4Miles = Number($('t4Miles').value)||6.0;
   const t4Align = $('t4Align').value==='on';
-  return {baseFare,g,rateMul,r4Mul,t4Miles,t4Align};
+  return {baseFare, mul:{rate1:r1,rate2:r2,rate3:r3,global:g}, rate4:{align:t4Align, miles:t4Miles, mul:r4}};
 }
-function pickPerMileSimple(rules, miles){
-  const r = rules.find(x=>{
-    const w = x.when||{};
-    if(w.mMin!==undefined && miles < w.mMin) return false;
-    if(w.mMax!==undefined && miles > w.mMax) return false;
-    return true;
-  });
-  return (r||rules[rules.length-1]).v;
-}
-function minutePartSimple(tiers, mins, mul){
+
+/* ===== Per-minute and per-mile helpers ===== */
+function minuteCost(tiers, mins, mul){
   let rem=mins, used=0, sum=0;
   for(const t of tiers){
     const up = t.upTo==null ? Infinity : t.upTo;
@@ -305,57 +238,90 @@ function minutePartSimple(tiers, mins, mul){
   }
   return sum;
 }
-
-function applyScalableCorrections(rateKey, core, miles, mins){
-  // Common: 6–7 mile softening (mirror R1 behaviour where requested)
-  const inSixToSeven = miles>=6.0 && miles<=7.0;
-
-  if(rateKey==='rate1'){
-    if(miles>=1.5 && miles<=2.2 && mins>=13) core += 1.20;     // R1 +£1.20
-    if(inSixToSeven) core *= 0.95;                              // R1 −5%
-  }
-  else if(rateKey==='rate2'){
-    // Specific R2 boosts you asked for
-    if(miles>=1.35 && miles<=1.45 && mins>=9 && mins<=11) core += 0.60;  // ~1.4mi ~9–11m → +£0.60
-    if(miles>=1.45 && miles<=1.55 && mins>=8 && mins<=11) core += 1.20;  // ~1.5mi 8–11m → +£1.20
-    if(inSixToSeven) core *= 0.95;                                       // mirror R1 softening
-  }
-  else if(rateKey==='rate3'){
-    if(miles>=1.5 && miles<=2.2 && mins>=13) core += 1.20;     // mirror R1 +£1.20
-    if(inSixToSeven) core *= 0.95;                              // mirror R1 −5%
-    // Note: Rate-3 extra uplift (3–7mi & >30m) stays in ORIGINAL; scalable keeps base parity
-  }
-  return roundTo(core, RANGE.inc);
+function perMileRate(rules, miles){
+  const r = rules.find(x=>{
+    const min = x.mMin ?? -Infinity;
+    const max = x.mMax ?? Infinity;
+    return miles>=(min) && miles<=(max);
+  }) || rules[rules.length-1];
+  return r.v;
 }
 
-function estimateScalable(rateKey, mins, miles){
-  const A = getAdmin();
-  const rateMul = A.rateMul[rateKey]||1;
+/* ===== Old Scalable core =====
+   - Base fare + (per-minute * Global*RateX) + (per-mile * Global*RateX) * miles
+   - If Rate-4 align ON and miles ≥ threshold: per-mile uses Rate-2 bands with extra Rate-4 multiplier
+   - Keep Rate-3 extra uplift (3–7 mi & mins>30)
+*/
+function coreOld(rateKey, mins, miles){
+  const U = getUplifts();
+  const mul = (U.mul[rateKey]||1) * (U.mul.global||1);
 
-  // Minute part
-  const mTiers = ORIG[rateKey].perMinute;
-  const mPart = minutePartSimple(mTiers, mins, A.g*rateMul);
+  const mPart = minuteCost(MODEL[rateKey].perMinute, mins, mul);
 
-  // Per-mile: optional Tariff-4 alignment to Rate-2 + optional R4 uplift
-  let perMileRules = ORIG[rateKey].perMileRules;
-  let perMileMul = A.g * rateMul;
-  if(A.t4Align && miles >= A.t4Miles){
-    perMileRules = ORIG.rate2.perMileRules;
-    perMileMul = A.g * (A.rateMul.rate2||1) * (A.r4Mul||1);
+  let pmRules = MODEL[rateKey].perMile;
+  let pmMul   = mul;
+  if(U.rate4.align && miles >= U.rate4.miles){
+    pmRules = MODEL.rate2.perMile; // align to Rate-2 per-mile
+    pmMul   = (U.mul.rate2||1) * (U.mul.global||1) * (U.rate4.mul||1);
   }
-  const perMi = pickPerMileSimple(perMileRules, miles) * perMileMul;
-  const milePart = perMi * miles;
+  const miRate = perMileRate(pmRules, miles) * pmMul;
+  let core = U.baseFare + mPart + miRate*miles;
 
-  let core = A.baseFare + mPart + milePart;
+  // Optional R3 extra (keep prior behaviour you validated)
+  if(rateKey==='rate3' && MODEL.rate3.r3Extra && miles>=3 && miles<=7 && mins>30){
+    const k = 0.20 + 0.015*miles;
+    core += roundTo(k * (mins - 30), INC);
+  }
 
-  // Apply the new scalable corrections per rate
-  core = applyScalableCorrections(rateKey, core, miles, mins);
-
-  const {lower,upper} = buildRange(core, miles, mins);
-  return {core, lower, upper};
+  return roundTo(core, INC);
 }
 
-/* ========== UI plumbing ========== */
+/* ===== Band Tweaks storage (per rate, 10 bands) ===== */
+const bandState = {
+  rate1: Array(10).fill(0),
+  rate2: Array(10).fill(0),
+  rate3: Array(10).fill(0)
+};
+function bandIndexForMiles(m){
+  if(m<0) return -1;
+  const i = Math.floor(m); // 0–0.999→0, 1–1.999→1, ..., 9–9.999→9
+  return (i>=0 && i<=9) ? i : -1;
+}
+
+/* ===== New core (Old + per-band additive tweak ≤10 mi) ===== */
+function coreNew(rateKey, mins, miles){
+  const base = coreOld(rateKey, mins, miles);
+  const idx = bandIndexForMiles(miles);
+  if(idx<0) return base; // >10 miles → keep “what worked”
+  const add = Number((bandState[rateKey]||[])[idx]) || 0;
+  return roundTo(base + add, INC);
+}
+
+/* ===== UI: Band controls replicate per rate ===== */
+function refreshBandInputs(){
+  const rate = $('bandRateSel').value;
+  const inputs = document.querySelectorAll('input.band');
+  inputs.forEach(el=>{
+    const i = Number(el.dataset.band);
+    el.value = (bandState[rate][i] ?? 0);
+    // toggle visible class to show only the selected rate’s row
+    inputs.forEach(x=>x.classList.toggle('hidden', false));
+  });
+  // Show labels reflect selected rate (using classes)
+  document.querySelectorAll('.band').forEach(el=>{
+    el.style.display = el.classList.contains(rate) ? '' : 'none';
+  });
+}
+$('bandRateSel').addEventListener('input', refreshBandInputs);
+document.addEventListener('input', (e)=>{
+  if(!e.target.classList.contains('band')) return;
+  const rate = $('bandRateSel').value;
+  const idx = Number(e.target.dataset.band);
+  bandState[rate][idx] = Number(e.target.value)||0;
+  recalcAndRender();
+});
+
+/* ===== App state + CSV handling ===== */
 let rows = []; // {mins, miles, meter}
 function parseCSV(text){
   const out=[];
@@ -371,30 +337,35 @@ function parseCSV(text){
 }
 function classify(err, tol){ if(Math.abs(err)<=tol) return 'near'; return err>0?'over':'under'; }
 
+/* ===== Recalc + Render ===== */
 function recalcAndRender(){
-  const rate = $('rateSel').value;
   const tol = Number($('tol').value)||0.60;
+  const rate = $('rateSel').value;
   const sort = $('sortSel').value;
 
   const computed = rows.map((r,i)=>{
-    const o = estimateOriginal(rate, r.mins, r.miles);
-    const s = estimateScalable(rate, r.mins, r.miles);
-    const errO = r2(o.core - r.meter);
-    const errS = r2(s.core - r.meter);
-    const coreDelta = r2(s.core - o.core);
-    return {idx:i+1, ...r, o, s, errO, errS, coreDelta};
+    const oldC = coreOld(rate, r.mins, r.miles);
+    const newC = coreNew(rate, r.mins, r.miles);
+    const errO = r2(oldC - r.meter);
+    const errN = r2(newC - r.meter);
+    return {
+      idx:i+1, ...r,
+      oldC, errO,
+      newC, errN,
+      delta: r2(newC - oldC)
+    };
   });
 
   let view = computed;
-  if(sort==='orig_asc')  view = [...view].sort((a,b)=>Math.abs(a.errO)-Math.abs(b.errO));
-  if(sort==='orig_desc') view = [...view].sort((a,b)=>Math.abs(b.errO)-Math.abs(a.errO));
-  if(sort==='scal_asc')  view = [...view].sort((a,b)=>Math.abs(a.errS)-Math.abs(b.errS));
-  if(sort==='scal_desc') view = [...view].sort((a,b)=>Math.abs(b.errS)-Math.abs(a.errS));
+  if(sort==='old_asc')  view = [...view].sort((a,b)=>Math.abs(a.errO)-Math.abs(b.errO));
+  if(sort==='old_desc') view = [...view].sort((a,b)=>Math.abs(b.errO)-Math.abs(a.errO));
+  if(sort==='new_asc')  view = [...view].sort((a,b)=>Math.abs(a.errN)-Math.abs(b.errN));
+  if(sort==='new_desc') view = [...view].sort((a,b)=>Math.abs(b.errN)-Math.abs(a.errN));
 
   const tb = $('tbody'); tb.innerHTML='';
   for(const r of view){
     const clsO = classify(r.errO, tol);
-    const clsS = classify(r.errS, tol);
+    const clsN = classify(r.errN, tol);
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="mono">${r.idx}</td>
@@ -402,18 +373,19 @@ function recalcAndRender(){
       <td>${r.miles.toFixed(1)}</td>
       <td class="mono">£${r.meter.toFixed(2)}</td>
 
-      <td class="mono">£${r.o.core.toFixed(2)}</td>
+      <td class="mono">£${r.oldC.toFixed(2)}</td>
       <td class="mono ${clsO}">${r.errO>0?'+':''}${r.errO.toFixed(2)}</td>
 
-      <td class="mono">£${r.s.core.toFixed(2)}</td>
-      <td class="mono ${clsS}">${r.errS>0?'+':''}${r.errS.toFixed(2)}</td>
+      <td class="mono">£${r.newC.toFixed(2)}</td>
+      <td class="mono ${clsN}">${r.errN>0?'+':''}${r.errN.toFixed(2)}</td>
 
-      <td class="mono">${r.coreDelta>0?'+':''}${r.coreDelta.toFixed(2)}</td>
+      <td class="mono">${r.delta>0?'+':''}${r.delta.toFixed(2)}</td>
     `;
     tb.appendChild(tr);
   }
 }
 
+/* ===== Wire up buttons ===== */
 $('addPasted').addEventListener('click', ()=>{
   const arr = parseCSV($('pasteBox').value);
   rows = rows.concat(arr);
@@ -433,46 +405,40 @@ $('addOne').addEventListener('click', ()=>{
 ['rateSel','baseFare','upliftGlobal','upliftR1','upliftR2','upliftR3','upliftR4','t4Miles','t4Align','tol','sortSel']
 .forEach(id=>$(id).addEventListener('input', recalcAndRender));
 
-$('recalcBtn').addEventListener('click', recalcAndRender);
 $('clearAll').addEventListener('click', ()=>{ rows=[]; recalcAndRender(); });
 
 $('exportBtn').addEventListener('click', ()=>{
   const tol = Number($('tol').value)||0.60;
   const rate = $('rateSel').value;
-  const A = (function(){
-    const baseFare = Number($('baseFare').value)||4.20;
-    const g = (Number($('upliftGlobal').value)||0)/100 + 1;
-    const r1 = (Number($('upliftR1').value)||0)/100 + 1;
-    const r2 = (Number($('upliftR2').value)||0)/100 + 1;
-    const r3 = (Number($('upliftR3').value)||0)/100 + 1;
-    const r4 = (Number($('upliftR4').value)||0)/100 + 1;
-    const t4Miles = Number($('t4Miles').value)||6.0;
-    const t4Align = $('t4Align').value==='on';
-    return {baseFare,g,r1,r2,r3,r4,t4Miles,t4Align};
-  })();
-
+  const U = getUplifts();
   const th = ["minutes","miles","meter",
-              "core_original","diff_original",
-              "core_scalable","diff_scalable",
-              "core_delta_scalable_minus_original",
-              "rate","baseFare","upliftGlobal","upliftR1","upliftR2","upliftR3","upliftR4","t4Align","t4Miles","tolerance"];
+              "core_old","diff_old",
+              "core_new","diff_new",
+              "delta_new_minus_old",
+              "rate","baseFare","upliftGlobal","upliftR1","upliftR2","upliftR3",
+              "t4Align","t4Miles","upliftR4","tolerance",
+              "bands_rate1","bands_rate2","bands_rate3"];
   const out = rows.map(r=>{
-    const o = estimateOriginal(rate, r.mins, r.miles);
-    const s = estimateScalable(rate, r.mins, r.miles);
-    const errO = r2(o.core - r.meter), errS = r2(s.core - r.meter);
+    const oldC = coreOld(rate, r.mins, r.miles);
+    const newC = coreNew(rate, r.mins, r.miles);
+    const errO = r2(oldC - r.meter), errN = r2(newC - r.meter);
     return [r.mins,r.miles,r.meter,
-            o.core,errO,
-            s.core,errS,
-            r2(s.core - o.core),
-            rate,A.baseFare,A.g,A.r1,A.r2,A.r3,A.r4,A.t4Align,A.t4Miles,tol];
+            oldC,errO,
+            newC,errN,
+            r2(newC - oldC),
+            rate,U.baseFare,U.mul.global, U.mul.rate1, U.mul.rate2, U.mul.rate3,
+            U.rate4.align, U.rate4.miles, U.rate4.mul, tol,
+            JSON.stringify(bandState.rate1), JSON.stringify(bandState.rate2), JSON.stringify(bandState.rate3)
+    ];
   });
   const csv = [th.join(',')].concat(out.map(a=>a.join(','))).join('\r\n');
   const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='cabwizz_dual_tester_v5_1_compare.csv'; a.click(); URL.revokeObjectURL(a.href);
+  a.download='cabwizz_dual_tester_v5_old_vs_new.csv'; a.click(); URL.revokeObjectURL(a.href);
 });
 
-// init
+/* ===== Init ===== */
+refreshBandInputs();
 recalcAndRender();
 </script>
 </body>

@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CabWizz — Rate 2 Tester (New Core Only)</title>
+<style>
+  :root{
+    --bg:#f7f7f8; --card:#fff; --bd:#e5e5ea;
+    --over:#1869ff;  /* estimator > meter */
+    --under:#d23636; /* estimator < meter */
+    --near:#111;     /* within tolerance */
+  }
+  *{box-sizing:border-box}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);margin:12px;color:#111}
+  h1{font-size:18px;margin:0 0 10px}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin:10px 0}
+  .grid{display:grid;gap:10px}
+  .controls{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .inputs{grid-template-columns:1fr 1fr}
+  @media (max-width:980px){.controls{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @media (max-width:560px){.controls{grid-template-columns:repeat(2,minmax(0,1fr))}.inputs{grid-template-columns:1fr}}
+  label{font-size:12px;color:#444;display:block;margin-bottom:4px}
+  input,button,textarea{width:100%;font-size:14px;border-radius:12px;border:1px solid var(--bd);padding:10px;background:#fff}
+  textarea{min-height:110px}
+  button{font-weight:600;cursor:pointer}
+  .btn{background:#0a7;color:#fff;border:none}
+  .btn.gray{background:#fff;color:#111;border:1px solid var(--bd)}
+  .btn.alt{background:#1869ff}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{border-bottom:1px solid #eee;padding:8px 10px;text-align:left;vertical-align:top}
+  th{background:#fafafa;position:sticky;top:0}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .over{color:var(--over);font-weight:700}
+  .under{color:var(--under);font-weight:700}
+  .near{color:var(--near)}
+  .tiny{color:#666;font-size:12px;margin-top:6px}
+</style>
+</head>
+<body>
+  <h1>CabWizz — Rate 2 Tester (New Core Only)</h1>
+
+  <!-- Minimal admin controls -->
+  <div class="card">
+    <div class="grid controls">
+      <div>
+        <label>Base Fare (£)</label>
+        <input id="baseFare" type="number" step="0.01" value="4.20">
+      </div>
+      <div>
+        <label>Global uplift (%)</label>
+        <input id="upliftGlobal" type="number" step="0.01" value="0">
+      </div>
+      <div>
+        <label>Rate 2 uplift (%)</label>
+        <input id="upliftR2" type="number" step="0.01" value="0">
+      </div>
+      <div>
+        <label>Tolerance (±£)</label>
+        <input id="tol" type="number" step="0.1" value="0.60">
+      </div>
+      <div>
+        <label>&nbsp;</label>
+        <button class="btn" id="recalcBtn">Recalculate</button>
+      </div>
+    </div>
+    <div class="tiny">Paste only: <span class="mono">minutes,miles,meter</span>. Δ colours: blue = over, red = under, black = within tolerance.</div>
+  </div>
+
+  <!-- Data entry -->
+  <div class="card">
+    <div class="grid inputs">
+      <div>
+        <label>Paste CSV (minutes,miles,meter) — one per line</label>
+        <textarea id="pasteBox" placeholder="e.g. 21,3.7,29.00&#10;16,2.1,18.40&#10;30,6.0,35.40"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="btn" id="addPasted">Add pasted rows</button>
+          <button class="btn gray" id="clearAll">Clear table</button>
+          <button class="btn alt" id="exportBtn">Export CSV</button>
+        </div>
+      </div>
+      <div>
+        <label>Quick add (one row)</label>
+        <div class="grid" style="grid-template-columns:repeat(3,1fr);gap:8px">
+          <div><input id="qMin" type="number" step="1" placeholder="Minutes"></div>
+          <div><input id="qMi" type="number" step="0.1" placeholder="Miles"></div>
+          <div><input id="qMeter" type="number" step="0.01" placeholder="Meter £"></div>
+        </div>
+        <button class="btn" id="addOne" style="margin-top:8px">Add row</button>
+        <p class="mono" style="margin-top:10px;color:#555">Change multipliers anytime — table recalculates instantly.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card" style="max-height:65vh;overflow:auto">
+    <table id="tbl">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Minutes</th>
+          <th>Miles</th>
+          <th>Meter</th>
+          <th>Core (R2 New)</th>
+          <th>Δ vs Meter</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+<script>
+/* ===== Helpers ===== */
+const $ = id => document.getElementById(id);
+const r2 = x => Math.round(x*100)/100;
+const roundTo = (x,inc)=>Math.round(x/inc)*inc;
+
+/* ===== Config ===== */
+const INC = 0.20; // fare increments
+
+// Minute tiers for Rate 2 (kept simple; tunable via global/r2 multipliers)
+const R2_MINUTE_TIERS = [
+  { upTo: 6,  v: 0.31 },
+  { upTo: 12, v: 0.33 },
+  { upTo: 25, v: 0.40 },
+  {            v: 0.60 } // beyond 25
+];
+
+// Per-mile bands for Rate 2 (0–1, 1–2, …, 9–10, 10+)
+// These are a starting point for validation — we’ll refine after your test pass.
+const R2_PER_MILE_BANDS = [
+  {min:0,  max:1,  v:3.75},
+  {min:1,  max:2,  v:3.85},
+  {min:2,  max:3,  v:4.00},
+  {min:3,  max:4,  v:4.15},
+  {min:4,  max:5,  v:4.30},
+  {min:5,  max:6,  v:4.35},
+  {min:6,  max:7,  v:4.35},
+  {min:7,  max:8,  v:4.20},
+  {min:8,  max:9,  v:4.10},
+  {min:9,  max:10, v:4.05},
+  {min:10, max:1e9,v:4.10}
+];
+
+/* ===== Core calculator (Rate 2 New) ===== */
+function getAdmin(){
+  const baseFare = Number($('baseFare').value)||4.20;
+  const g  = (Number($('upliftGlobal').value)||0)/100 + 1;
+  const r2u = (Number($('upliftR2').value)||0)/100 + 1;
+  return { baseFare, mul: g * r2u };
+}
+
+function minutePart(mins, mul){
+  let rem = mins, used = 0, sum = 0;
+  for(const t of R2_MINUTE_TIERS){
+    const up = t.upTo==null ? Infinity : t.upTo;
+    const span = Math.max(0, Math.min(rem, up - used));
+    sum += span * (t.v * mul);
+    rem -= span; used += span;
+    if(rem<=0) break;
+  }
+  return sum;
+}
+
+function perMileRate(miles){
+  const b = R2_PER_MILE_BANDS.find(b=>miles>=b.min && miles<b.max) || R2_PER_MILE_BANDS[R2_PER_MILE_BANDS.length-1];
+  return b.v;
+}
+
+function estimateR2(mins, miles){
+  const A = getAdmin();
+  const mPart = minutePart(mins, A.mul);
+  const miRate = perMileRate(miles) * A.mul;
+  let core = A.baseFare + mPart + miRate * miles;
+  core = roundTo(core, INC);
+  return core;
+}
+
+/* ===== UI plumbing ===== */
+let rows = []; // {mins,miles,meter}
+
+function parseCSV(text){
+  const out=[];
+  text.split(/\r?\n/).forEach(line=>{
+    const s=line.trim(); if(!s) return;
+    const parts=s.split(',').map(x=>x.trim());
+    if(parts.length<3) return;
+    const mins  = Number(parts[0]);
+    const miles = Number(parts[1]);
+    const meter = Number(String(parts[2]).replace('£',''));
+    if(Number.isFinite(mins)&&Number.isFinite(miles)&&Number.isFinite(meter)) out.push({mins,miles,meter});
+  });
+  return out;
+}
+
+function classify(err, tol){
+  if(Math.abs(err)<=tol) return 'near';
+  return err>0 ? 'over' : 'under';
+}
+
+function recalcAndRender(){
+  const tol = Number($('tol').value)||0.60;
+  const tb = $('tbody'); tb.innerHTML='';
+  rows.forEach((r,idx)=>{
+    const core = r2( estimateR2(r.mins, r.miles) );
+    const diff = r2(core - r.meter);
+    const cls  = classify(diff, tol);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="mono">${idx+1}</td>
+      <td>${r.mins}</td>
+      <td>${r.miles.toFixed(1)}</td>
+      <td class="mono">£${r.meter.toFixed(2)}</td>
+      <td class="mono">£${core.toFixed(2)}</td>
+      <td class="mono ${cls}">${diff>0?'+':''}${diff.toFixed(2)}</td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+
+/* events */
+$('addPasted').addEventListener('click', ()=>{
+  const arr = parseCSV($('pasteBox').value);
+  rows = rows.concat(arr);
+  $('pasteBox').value='';
+  recalcAndRender();
+});
+$('addOne').addEventListener('click', ()=>{
+  const mins = Number($('qMin').value);
+  const miles = Number($('qMi').value);
+  const meter = Number($('qMeter').value);
+  if(Number.isFinite(mins)&&Number.isFinite(miles)&&Number.isFinite(meter)){
+    rows.push({mins,miles,meter});
+    $('qMin').value=$('qMi').value=$('qMeter').value='';
+    recalcAndRender();
+  }
+});
+['baseFare','upliftGlobal','upliftR2','tol'].forEach(id=>$(id).addEventListener('input', recalcAndRender));
+$('recalcBtn').addEventListener('click', recalcAndRender);
+$('clearAll').addEventListener('click', ()=>{ rows=[]; recalcAndRender(); });
+
+$('exportBtn').addEventListener('click', ()=>{
+  const A = getAdmin();
+  const tol = Number($('tol').value)||0.60;
+  const th = ["minutes","miles","meter","core_r2_new","diff","baseFare","globalXR2_multiplier","tolerance"];
+  const out = rows.map(r=>{
+    const core = r2( estimateR2(r.mins, r.miles) );
+    const diff = r2(core - r.meter);
+    return [r.mins,r.miles,r.meter,core,diff,A.baseFare,A.mul,tol];
+  });
+  const csv = [th.join(',')].concat(out.map(a=>a.join(','))).join('\r\n');
+  const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='cabwizz_rate2_newcore_results.csv'; a.click(); URL.revokeObjectURL(a.href);
+});
+
+/* init */
+recalcAndRender();
+</script>
+</body>
+</html>
